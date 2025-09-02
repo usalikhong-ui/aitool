@@ -8,7 +8,7 @@
     <!-- 關鍵：設定 UTF-8 編碼，解決中文亂碼問題 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>香港助理儀表板</title>
+    <title>香港助理儀表板 (瀏覽器 AI 版)</title>
     
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -41,7 +41,6 @@
             WEATHER: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc',
             WARNING: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc',
         };
-        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=`;
 
         const PANEL_CONFIG = {
             INITIAL_RATIO: 0.45, // 初始高度佔螢幕的 45%
@@ -72,30 +71,24 @@
             }
         };
 
-
         /**
-         * 呼叫 Gemini API
-         * @param {Array<object>} chatHistory - 完整的聊天歷史紀錄
-         * @param {string} prompt - 當前的用戶輸入
+         * 呼叫瀏覽器內建的 AI (window.ai)
+         * @param {string} prompt - 完整的提示文字，包含歷史、上下文和最新問題
          * @returns {Promise<string>} - 模型的回應文字
          */
-        const callGeminiApi = async (chatHistory, prompt) => {
-            const apiKey = ""; // 在 Canvas 環境中會自動提供
-            const payload = {
-                contents: [
-                    ...chatHistory.map(msg => ({ role: msg.role, parts: [{ text: msg.text }] })),
-                    { role: "user", parts: [{ text: prompt }] }
-                ],
-                systemInstruction: {
-                    parts: [{ text: "你是一個樂於助人的香港本地助理。請使用繁體中文（香港）和廣東話口語風格回答問題，讓回應感覺親切自然。" }]
-                }
-            };
-            const data = await fetchWithRetry(GEMINI_API_URL + apiKey, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            return data.candidates[0].content.parts[0].text;
+        const callBrowserAi = async (prompt) => {
+            if (!window.ai || typeof window.ai.createTextSession !== 'function') {
+                return "對唔住，你嘅瀏覽器好似唔支援內建 AI 功能。請試下用一個支援嘅瀏覽器，例如最新版嘅 Chrome。";
+            }
+            try {
+                // 'default' 選項會自動選擇最適合的裝置上模型
+                const session = await window.ai.createTextSession({topK: 3});
+                const response = await session.prompt(prompt);
+                return response;
+            } catch (error) {
+                console.error("呼叫瀏覽器 AI 時發生錯誤:", error);
+                return "哎呀，執行 AI 功能時遇到啲問題，請稍後再試。";
+            }
         };
 
 
@@ -370,7 +363,7 @@
             const { panelRef, panelHeight, handleDragStart } = useResizablePanel(PANEL_CONFIG);
 
             const [chatHistory, setChatHistory] = useState([
-                { role: 'model', text: '你好！我可以回答關於天氣、港鐵交通狀況或者任何你想知道嘅問題。' }
+                { role: 'model', text: '你好！我係你嘅瀏覽器 AI 助理。我可以利用即時嘅天氣同交通資訊，回答你嘅問題。試下問我：「而家天氣點？使唔使帶遮？」' }
             ]);
             const [userInput, setUserInput] = useState('');
             const [isChatLoading, setIsChatLoading] = useState(false);
@@ -379,40 +372,51 @@
             const handleSendMessage = useCallback(async (prompt) => {
                 if (!prompt.trim()) return;
 
-                const newUserMessage = { role: 'user', text: userInput };
-                const newChatHistory = [...chatHistory, newUserMessage];
+                const newUserMessage = { role: 'user', text: prompt };
+                const currentChatHistory = [...chatHistory, newUserMessage];
                 
-                setChatHistory(newChatHistory);
+                setChatHistory(currentChatHistory);
                 setUserInput('');
                 setIsChatLoading(true);
 
                 try {
-                    let context = "";
+                    // --- 建立完整的提示 (Prompt Engineering) ---
+                    const systemPrompt = "你是一個樂於助人的香港本地助理。請使用繁體中文（香港）和廣東話口語風格回答問題，讓回應感覺親切自然。";
                     
-                    // 添加港鐵服務警報作為上下文
+                    // 將歷史紀錄轉換成文字 (只取最近幾則對話以防提示過長)
+                    const historyString = chatHistory.slice(-6) // 只取最近 6 條訊息
+                        .map(msg => `${msg.role === 'user' ? '用戶' : '助理'}: ${msg.text}`)
+                        .join('\n');
+
+                    // 建立即時上下文
+                    let context = "";
                     const mtrAlerts = mtrInfo.lines?.filter(line => line.status !== '良好')
                                                   .map(line => `${line.name}: ${line.details || line.status}`)
                                                   .join('\n');
                     if (mtrAlerts) {
-                        context += `關於目前的港鐵服務狀況：\n${mtrAlerts}\n\n`;
+                        context += `\n\n--- 實時參考資料：港鐵服務狀況 ---\n${mtrAlerts}`;
                     }
-
-                    // 添加天氣資訊作為上下文
                     if(weather) {
-                        context += `目前的香港天氣資訊：\n溫度：${weather.temperature?.data[0]?.value}°C\n濕度：${weather.humidity?.data[0]?.value}%\n\n`;
+                        context += `\n\n--- 實時參考資料：香港天氣資訊 ---\n溫度：${weather.temperature?.data[0]?.value}°C\n濕度：${weather.humidity?.data[0]?.value}%`;
+                        const warningsText = warnings.map(w => w.name).join(', ');
+                        if (warningsText) {
+                            context += `\n天氣警告：${warningsText}`;
+                        }
                     }
-                    
-                    const finalPrompt = context ? `${context}我的問題是：「${prompt}」` : prompt;
 
-                    const modelResponse = await callGeminiApi(chatHistory, finalPrompt);
+                    // 組合最終提示
+                    const finalPrompt = `${systemPrompt}\n\n--- 對話紀錄 ---\n${historyString}\n${context}\n\n--- 最新問題 ---\n用戶: ${prompt}`;
+                    
+                    const modelResponse = await callBrowserAi(finalPrompt);
                     setChatHistory(prev => [...prev, { role: 'model', text: modelResponse }]);
+
                 } catch (error) {
-                    console.error("與 Gemini API 通訊失敗:", error);
+                    console.error("處理 AI 訊息時發生錯誤:", error);
                     setChatHistory(prev => [...prev, { role: 'model', text: '對唔住，我暫時無法回覆。請稍後再試。' }]);
                 } finally {
                     setIsChatLoading(false);
                 }
-            }, [chatHistory, userInput, weather, mtrInfo]);
+            }, [chatHistory, weather, warnings, mtrInfo]);
 
             return (
                 <div className="bg-gray-900 text-white h-screen w-full font-sans flex flex-col overflow-hidden">
@@ -461,5 +465,3 @@
 </body>
 </html>
 
-
-將以上AI對話視窗模型改造deekserk，因為gemini的話香港用戶需要使用VPN
