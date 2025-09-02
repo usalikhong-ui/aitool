@@ -37,21 +37,6 @@
             padding-bottom: 0.5rem;
             display: inline-block;
         }
-        .transport-link {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            background-color: #F9FAFB;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #374151;
-            font-weight: 500;
-            transition: background-color 0.2s, color 0.2s;
-        }
-        .transport-link:hover {
-            background-color: #3B82F6;
-            color: white;
-        }
         /* 狀態顏色 */
         .status-smooth { color: #10B981; } /* 綠色 - 良好/暢順 */
         .status-slow { color: #F59E0B; }   /* 橙色 - 緩慢/延誤 */
@@ -103,38 +88,27 @@
                      <div id="mtr-loader" class="space-y-3">
                         <div class="h-10 w-full loading-placeholder"></div>
                         <div class="h-10 w-full loading-placeholder"></div>
-                        <div class="h-10 w-full loading-placeholder"></div>
-                        <div class="h-10 w-full loading-placeholder"></div>
-                    </div>
+                     </div>
                     <!-- 港鐵資料將會注入這裡 -->
                  </div>
-                 <p class="text-xs text-gray-500 mt-4 text-center">最後更新：<span id="mtr-last-updated">--:--</span></p>
+                 <p class="text-xs text-gray-500 mt-4 text-center">資料來源：資料一線通</p>
             </div>
             
             <!-- 過海隧道 -->
-            <div class="space-y-6 lg:col-span-1">
-                <!-- 過海隧道行車時間 -->
-                <div class="info-card">
-                    <h2 class="section-title"><i class="fas fa-car-tunnel mr-2"></i> 過海隧道</h2>
-                    <div class="space-y-4 text-center">
-                        <!-- 靜態數據，可手動更新或未來接駁 API -->
-                        <div>
-                            <h3 class="font-bold text-lg">紅磡海底隧道</h3>
-                            <p>往九龍：<span class="font-semibold status-slow">緩慢</span> | 往港島：<span class="font-semibold status-smooth">正常</span></p>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-lg">西區海底隧道</h3>
-                             <p>往九龍：<span class="font-semibold status-smooth">正常</span> | 往港島：<span class="font-semibold status-smooth">正常</span></p>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-lg">東區海底隧道</h3>
-                             <p>往九龍：<span class="font-semibold status-slow">緩慢</span> | 往港島：<span class="font-semibold status-congested">擠塞</span></p>
-                        </div>
+            <div class="info-card lg:col-span-1">
+                <h2 class="section-title"><i class="fas fa-car-tunnel mr-2"></i> 過海隧道行車時間</h2>
+                <div id="tunnel-content" class="flex-grow">
+                     <!-- 讀取中提示 -->
+                     <div id="tunnel-loader" class="space-y-4">
+                        <div class="h-12 w-full loading-placeholder"></div>
+                        <div class="h-12 w-full loading-placeholder"></div>
+                        <div class="h-12 w-full loading-placeholder"></div>
                     </div>
-                     <p class="text-xs text-gray-500 mt-4 text-center">
-                        數據僅供參考，最新狀況請查閱<a href="https://www.td.gov.hk" target="_blank" class="text-blue-600 hover:underline">運輸署</a>。
-                    </p>
+                    <!-- 隧道資料將會注入這裡 -->
                 </div>
+                 <p class="text-xs text-gray-500 mt-4 text-center">
+                    資料來源：運輸署
+                </p>
             </div>
 
         </main>
@@ -147,9 +121,11 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const HKO_API = {
+            const API = {
                 WEATHER: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc',
                 WARNING: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc',
+                MTR: 'https://rt.data.gov.hk/v1/transport/mtr/special-train-service',
+                TUNNEL: 'https://resource.data.one.gov.hk/td/jti/journey_time_indicators.json'
             };
 
             // --- 更新頁面時間 ---
@@ -161,11 +137,10 @@
             
             // --- 獲取及渲染天氣資料 ---
             const fetchWeatherData = async () => {
-                const weatherContentEl = document.getElementById('weather-content');
-                const weatherLoaderEl = document.getElementById('weather-loader');
-                
+                const contentEl = document.getElementById('weather-content');
+                const loaderEl = document.getElementById('weather-loader');
                 try {
-                    const [weatherRes, warningRes] = await Promise.all([fetch(HKO_API.WEATHER), fetch(HKO_API.WARNING)]);
+                    const [weatherRes, warningRes] = await Promise.all([fetch(API.WEATHER), fetch(API.WARNING)]);
                     if (!weatherRes.ok || !warningRes.ok) throw new Error('無法連接天氣伺服器');
                     
                     const weatherData = await weatherRes.json();
@@ -176,23 +151,11 @@
                     const icon = weatherData.icon[0];
                     const warnings = warningData.details || [];
 
-                    // 建立天氣警告 HTML
-                    let warningsHtml = '';
-                    if (warnings.length === 0) {
-                        warningsHtml = `
-                            <div class="bg-green-100 text-green-800 text-sm py-2 px-4 rounded-lg flex items-center">
-                                <i class="fas fa-check-circle mr-2"></i>目前沒有天氣警告
-                            </div>`;
-                    } else {
-                        warningsHtml = warnings.map(warn => `
-                            <div class="bg-yellow-100 text-yellow-800 text-sm py-2 px-4 rounded-lg flex items-center">
-                               <i class="fas fa-triangle-exclamation mr-2"></i>${warn.name}
-                            </div>
-                        `).join('');
-                    }
+                    let warningsHtml = warnings.length === 0
+                        ? `<div class="bg-green-100 text-green-800 text-sm py-2 px-4 rounded-lg flex items-center"><i class="fas fa-check-circle mr-2"></i>目前沒有天氣警告</div>`
+                        : warnings.map(warn => `<div class="bg-yellow-100 text-yellow-800 text-sm py-2 px-4 rounded-lg flex items-center"><i class="fas fa-triangle-exclamation mr-2"></i>${warn.name}</div>`).join('');
 
-                    // 渲染天氣主體
-                    weatherContentEl.innerHTML = `
+                    contentEl.innerHTML = `
                         <div class="flex justify-between items-start mb-4">
                             <div>
                                 <p class="text-lg text-gray-600">${temp.place}</p>
@@ -201,67 +164,103 @@
                             </div>
                             <img src="https://www.hko.gov.hk/images/wxicon/pic${icon}.png" alt="天氣圖示" class="w-24 h-24" />
                         </div>
-                        <div class="space-y-2">${warningsHtml}</div>
-                    `;
-
+                        <div class="space-y-2">${warningsHtml}</div>`;
                 } catch (error) {
                     console.error("獲取天氣失敗:", error);
-                    weatherContentEl.innerHTML = `<p class="text-red-500">無法載入天氣資料，請稍後再試。</p>`;
+                    contentEl.innerHTML = `<p class="text-red-500">無法載入天氣資料。</p>`;
                 } finally {
-                    weatherLoaderEl.style.display = 'none';
+                    if (loaderEl) loaderEl.style.display = 'none';
                 }
             };
             
-            // --- 獲取及渲染港鐵資料 (使用模擬數據) ---
-            const updateMtrStatus = () => {
-                const mtrContentEl = document.getElementById('mtr-content');
-                const mtrLoaderEl = document.getElementById('mtr-loader');
-                const mtrUpdatedEl = document.getElementById('mtr-last-updated');
+            // --- 獲取及渲染港鐵資料 ---
+            const fetchMtrData = async () => {
+                const contentEl = document.getElementById('mtr-content');
+                const loaderEl = document.getElementById('mtr-loader');
+                try {
+                    const res = await fetch(API.MTR);
+                    if (!res.ok) throw new Error('無法連接港鐵伺服器');
+                    const data = await res.json();
+                    
+                    if (data.status === 0) { // status 0 表示有特別通告
+                        contentEl.innerHTML = `
+                            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-r-lg">
+                                <p class="font-bold">特別消息：</p>
+                                <p class="text-sm mt-1 whitespace-pre-wrap">${data.message.replace(/\\n/g, '\n')}</p>
+                            </div>`;
+                    } else { // status 1 表示服務正常
+                        contentEl.innerHTML = `
+                             <div class="bg-green-100 text-green-800 p-4 rounded-lg flex items-center justify-center h-full">
+                                <i class="fas fa-check-circle mr-3 text-2xl"></i>
+                                <span class="font-semibold text-lg">所有路綫服務正常</span>
+                            </div>`;
+                    }
+                } catch (error) {
+                    console.error("獲取港鐵數據失敗:", error);
+                    contentEl.innerHTML = `<p class="text-red-500">無法載入港鐵服務狀況。</p>`;
+                } finally {
+                    if (loaderEl) loaderEl.style.display = 'none';
+                }
+            };
 
-                // 模擬 API 數據
-                const mtrInfo = {
-                    lastUpdated: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-                    lines: [
-                        { id: 'TCL', name: '東涌綫', status: '良好', statusColor: 'bg-green-500' },
-                        { id: 'AEL', name: '機場快綫', status: '良好', statusColor: 'bg-green-500' },
-                        { id: 'TML', name: '屯馬綫', status: '服務稍有延誤', statusColor: 'bg-yellow-500', details: '由於屯門站附近有信號故障，行車時間預計需要額外5-8分鐘。' },
-                        { id: 'TWL', name: '荃灣綫', status: '良好', statusColor: 'bg-green-500' },
-                        { id: 'KTL', name: '觀塘綫', status: '良好', statusColor: 'bg-green-500' },
-                        { id: 'ISL', name: '港島綫', status: '良好', statusColor: 'bg-green-500' },
-                    ]
-                };
+            // --- 獲取及渲染隧道資料 ---
+            const fetchTunnelData = async () => {
+                const contentEl = document.getElementById('tunnel-content');
+                const loaderEl = document.getElementById('tunnel-loader');
+                try {
+                    const res = await fetch(API.TUNNEL);
+                    if (!res.ok) throw new Error('無法連接運輸署伺服器');
+                    const data = await res.json();
+                    const tunnelMapping = {
+                        'CHT': '紅磡海底隧道',
+                        'EHC': '東區海底隧道',
+                        'WHC': '西區海底隧道'
+                    };
 
-                const linesHtml = mtrInfo.lines.map(line => `
-                    <li class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                        <span class="font-semibold text-base">${line.name}</span>
-                        <span class="px-3 py-1 text-sm font-bold text-white rounded-full ${line.statusColor}">${line.status}</span>
-                    </li>
-                `).join('');
-
-                const detailsHtml = mtrInfo.lines.filter(l => l.details).map(line => `
-                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-3 rounded-r-lg mt-4">
-                        <p class="font-bold">${line.name} 服務更新：</p>
-                        <p class="text-sm">${line.details}</p>
-                    </div>
-                `).join('');
-                
-                mtrContentEl.innerHTML = `
-                    <ul class="space-y-2">${linesHtml}</ul>
-                    <div>${detailsHtml}</div>
-                `;
-                mtrUpdatedEl.textContent = mtrInfo.lastUpdated;
-                mtrLoaderEl.style.display = 'none';
+                    const statusMapping = {
+                        1: { text: '暢順', class: 'status-smooth' },
+                        2: { text: '緩慢', class: 'status-slow' },
+                        3: { text: '擠塞', class: 'status-congested' }
+                    };
+                    
+                    const tunnels = data.journey_time_indicators.filter(item => tunnelMapping[item.location_id]);
+                    
+                    contentEl.innerHTML = `
+                        <div class="space-y-4">
+                        ${tunnels.map(tunnel => {
+                            const status = statusMapping[tunnel.colour_id] || { text: '未知', class: '' };
+                            return `
+                                <div class="text-center">
+                                    <h3 class="font-bold text-lg">${tunnelMapping[tunnel.location_id]}</h3>
+                                    <p>
+                                        往 ${tunnel.direction === 'NB' ? '九龍' : '港島'}: 
+                                        <span class="font-semibold ${status.class}">${status.text}</span>
+                                        (${tunnel.journey_time} 分鐘)
+                                    </p>
+                                </div>
+                            `
+                        }).join('')}
+                        </div>
+                    `;
+                } catch (error) {
+                    console.error("獲取隧道數據失敗:", error);
+                    contentEl.innerHTML = `<p class="text-red-500">無法載入隧道行車時間。</p>`;
+                } finally {
+                     if (loaderEl) loaderEl.style.display = 'none';
+                }
             };
 
 
             // --- 初始化及定時更新 ---
             updateTime();
             fetchWeatherData();
-            updateMtrStatus();
+            fetchMtrData();
+            fetchTunnelData();
 
             setInterval(updateTime, 1000); // 每秒更新時間
             setInterval(fetchWeatherData, 10 * 60 * 1000); // 每 10 分鐘更新天氣
-            setInterval(updateMtrStatus, 5 * 60 * 1000); // 每 5 分鐘更新港鐵
+            setInterval(fetchMtrData, 5 * 60 * 1000); // 每 5 分鐘更新港鐵
+            setInterval(fetchTunnelData, 2 * 60 * 1000); // 每 2 分鐘更新隧道
         });
     </script>
 </body>
