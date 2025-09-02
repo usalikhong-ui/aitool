@@ -1,269 +1,279 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>香港即時資訊儀表板</title>
-    <!-- 引入 Tailwind CSS -->
+    <title>文字RPG - 存檔/讀檔範例</title>
+    <!-- 引入 Tailwind CSS 以進行快速樣式設計 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Google Fonts 和 Font Awesome 圖示 -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- 引入 CryptoJS 庫以進行加密/解密 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
-        /* 自訂樣式 */
         body {
-            font-family: 'Inter', 'Noto Sans HK', sans-serif;
-            background-color: #f0f2f5; /* 淺灰色背景 */
-        }
-        .info-card {
-            background-color: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px_12px rgba(0, 0, 0, 0.08);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            display: flex;
-            flex-direction: column;
-        }
-        .info-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-        }
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            color: #1F2937;
-            border-bottom: 3px solid #3B82F6;
-            padding-bottom: 0.5rem;
-            display: inline-block;
-        }
-        /* 狀態顏色 */
-        .status-smooth { color: #10B981; } /* 綠色 - 良好/暢順 */
-        .status-slow { color: #F59E0B; }   /* 橙色 - 緩慢/延誤 */
-        .status-congested { color: #EF4444; } /* 紅色 - 擠塞 */
-
-        /* 讀取中的動畫 */
-        .loading-placeholder {
-            background-color: #e5e7eb;
-            border-radius: 0.5rem;
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulse {
-            50% { opacity: .5; }
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
         }
     </style>
 </head>
-<body class="antialiased text-gray-800">
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-        <!-- 頁面標題 -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-900">香港即時資訊儀表板</h1>
-            <p class="text-gray-600 mt-2">一站式查看天氣、交通及港鐵狀況</p>
-            <p class="text-sm text-gray-500 mt-2">最後更新時間：<span id="last-updated"></span></p>
-        </header>
-
-        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-
-            <!-- 天氣資訊 -->
-            <div class="info-card lg:col-span-1">
-                <h2 class="section-title"><i class="fas fa-cloud-sun mr-2"></i> 天氣實況</h2>
-                <div id="weather-content" class="flex-grow">
-                    <!-- 讀取中提示 -->
-                    <div id="weather-loader">
-                        <div class="h-8 w-3/4 loading-placeholder mb-4"></div>
-                        <div class="h-16 w-1/2 loading-placeholder mb-4"></div>
-                        <div class="h-6 w-full loading-placeholder"></div>
-                    </div>
-                    <!-- 天氣資料將會注入這裡 -->
-                </div>
-                <p class="text-xs text-gray-500 mt-4 text-center">資料來源：香港天文台</p>
+    <div class="w-full max-w-2xl bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 space-y-6">
+        
+        <!-- 遊戲主畫面 -->
+        <div>
+            <h1 class="text-3xl font-bold text-cyan-400 mb-2">迷霧森林的深處</h1>
+            <div id="game-text" class="bg-gray-900/50 p-4 rounded-lg min-h-[150px] border border-gray-700 text-lg leading-relaxed">
+                <!-- 遊戲文字將會顯示在這裡 -->
             </div>
+        </div>
 
-            <!-- 港鐵行車狀況 -->
-            <div class="info-card lg:col-span-1">
-                 <h2 class="section-title"><i class="fas fa-train-subway mr-2"></i> 港鐵行車狀況</h2>
-                 <div id="mtr-content" class="flex-grow">
-                    <!-- 讀取中提示 -->
-                     <div id="mtr-loader" class="space-y-3">
-                        <div class="h-10 w-full loading-placeholder"></div>
-                        <div class="h-10 w-full loading-placeholder"></div>
-                     </div>
-                    <!-- 港鐵資料將會注入這裡 -->
-                 </div>
-                 <p class="text-xs text-gray-500 mt-4 text-center">資料來源：資料一線通</p>
-            </div>
+        <!-- 玩家選項 -->
+        <div id="choices" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- 遊戲選項按鈕將會顯示在這裡 -->
+        </div>
+        
+        <!-- 玩家狀態 -->
+        <div id="player-stats" class="text-md text-gray-400 border-t border-gray-700 pt-4">
+            <!-- 玩家狀態將會顯示在這裡 -->
+        </div>
+
+        <!-- 存檔/讀檔區塊 -->
+        <div class="bg-gray-700/50 p-5 rounded-lg space-y-4 border border-gray-600">
+            <h2 class="text-xl font-semibold text-white">遊戲進度管理</h2>
             
-            <!-- 過海隧道 -->
-            <div class="info-card lg:col-span-1">
-                <h2 class="section-title"><i class="fas fa-car-tunnel mr-2"></i> 過海隧道行車時間</h2>
-                <div id="tunnel-content" class="flex-grow">
-                     <!-- 讀取中提示 -->
-                     <div id="tunnel-loader" class="space-y-4">
-                        <div class="h-12 w-full loading-placeholder"></div>
-                        <div class="h-12 w-full loading-placeholder"></div>
-                        <div class="h-12 w-full loading-placeholder"></div>
-                    </div>
-                    <!-- 隧道資料將會注入這裡 -->
+            <!-- 訊息提示 -->
+            <div id="message-area" class="text-center p-2 rounded-md text-sm font-medium transition-opacity duration-300 opacity-0"></div>
+
+            <div class="flex flex-col md:flex-row gap-4 items-center">
+                <input type="password" id="password-input" placeholder="請輸入存檔/讀取密碼" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition">
+                
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button id="save-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-transform transform hover:scale-105">
+                        儲存
+                    </button>
+                    <button id="load-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-transform transform hover:scale-105">
+                        讀取
+                    </button>
                 </div>
-                 <p class="text-xs text-gray-500 mt-4 text-center">
-                    資料來源：運輸署
-                </p>
             </div>
-
-        </main>
-
-        <footer class="text-center mt-12 text-gray-500 text-sm">
-            <p>&copy; 2024 香港資訊儀表板。所有資料以官方公佈為準。</p>
-            <p class="text-xs text-gray-400 mt-2">航之版本一</p>
-        </footer>
+            <p class="text-xs text-gray-500 text-center md:text-left">存檔會覆蓋之前的紀錄。請務必記住你的密碼。</p>
+        </div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const API = {
-                WEATHER: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc',
-                WARNING: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc',
-                MTR: 'https://rt.data.gov.hk/v1/transport/mtr/special-train-service',
-                TUNNEL: 'https://resource.data.one.gov.hk/td/jti/journey_time_indicators.json'
+        // --- DOM 元素獲取 ---
+        const gameTextEl = document.getElementById('game-text');
+        const choicesEl = document.getElementById('choices');
+        const playerStatsEl = document.getElementById('player-stats');
+        const saveButton = document.getElementById('save-button');
+        const loadButton = document.getElementById('load-button');
+        const passwordInput = document.getElementById('password-input');
+        const messageArea = document.getElementById('message-area');
+
+        // --- 遊戲核心資料 ---
+
+        // 玩家狀態物件
+        let player = {
+            name: "冒險者",
+            hp: 100,
+            maxHp: 100,
+            inventory: [],
+            currentScene: 'start' // 玩家目前的場景ID
+        };
+
+        // 遊戲場景與故事數據
+        const gameData = {
+            'start': {
+                text: "你在一片迷霧繚繞的森林中醒來，四周靜得可怕。你看到兩條小徑，一條通往左邊的陰暗洞穴，另一條則延伸到右邊的潺潺溪流。",
+                choices: [
+                    { text: "探索左邊的洞穴", nextScene: 'cave' },
+                    { text: "走向右邊的溪流", nextScene: 'stream' }
+                ]
+            },
+            'cave': {
+                text: "洞穴裡又濕又冷，深處傳來奇怪的聲響。在地上，你發現了一把生鏽的舊鑰匙。",
+                choices: [
+                    { text: "撿起鑰匙", nextScene: 'cave_with_key', effect: () => { 
+                        if (!player.inventory.includes('舊鑰匙')) {
+                            player.inventory.push('舊鑰匙');
+                        }
+                    }},
+                    { text: "害怕，離開洞穴", nextScene: 'start' }
+                ]
+            },
+            'cave_with_key': {
+                text: "你拿著鑰匙，感覺心安了一些。洞穴深處的聲音似乎更近了。",
+                choices: [
+                    { text: "繼續深入探索", nextScene: 'monster' },
+                    { text: "離開洞穴", nextScene: 'start' }
+                ]
+            },
+            'stream': {
+                text: "溪水清澈見底，喝下幾口後，你感覺精神恢復了。水中似乎有閃閃發光的東西。",
+                choices: [
+                    { text: "恢復體力", nextScene: 'stream', effect: () => { player.hp = Math.min(player.maxHp, player.hp + 20); }},
+                    { text: "離開溪邊", nextScene: 'start' }
+                ]
+            },
+            'monster': {
+                text: "一隻巨大的洞穴蜘蛛擋住了你的去路！",
+                choices: [
+                    { text: "戰鬥！", nextScene: 'end_bad' },
+                    { text: "逃跑！", nextScene: 'start', effect: () => { player.hp -= 30; } }
+                ]
+            },
+            'end_bad': {
+                text: "你奮力抵抗，但最終不敵蜘蛛。你的冒險到此為止了...",
+                choices: [
+                    { text: "重新開始", nextScene: 'start', effect: () => resetGame() }
+                ]
+            }
+        };
+
+        // --- 遊戲功能函數 ---
+
+        /** 重置遊戲到初始狀態 */
+        function resetGame() {
+            player = {
+                name: "冒險者",
+                hp: 100,
+                maxHp: 100,
+                inventory: [],
+                currentScene: 'start'
             };
+        }
 
-            // --- 更新頁面時間 ---
-            const updateTime = () => {
-                const now = new Date();
-                const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Hong_Kong' };
-                document.getElementById('last-updated').textContent = now.toLocaleTimeString('zh-HK', options);
-            };
-            
-            // --- 獲取及渲染天氣資料 ---
-            const fetchWeatherData = async () => {
-                const contentEl = document.getElementById('weather-content');
-                const loaderEl = document.getElementById('weather-loader');
-                try {
-                    const [weatherRes, warningRes] = await Promise.all([fetch(API.WEATHER), fetch(API.WARNING)]);
-                    if (!weatherRes.ok || !warningRes.ok) throw new Error('無法連接天氣伺服器');
-                    
-                    const weatherData = await weatherRes.json();
-                    const warningData = await warningRes.json();
+        /** 顯示提示訊息 */
+        function showMessage(text, isError = false) {
+            messageArea.textContent = text;
+            messageArea.classList.remove('opacity-0', 'bg-green-500', 'text-green-900', 'bg-red-500', 'text-red-900');
+            if (isError) {
+                messageArea.classList.add('bg-red-500', 'text-red-900');
+            } else {
+                messageArea.classList.add('bg-green-500', 'text-green-900');
+            }
+            messageArea.classList.add('opacity-100');
 
-                    const temp = weatherData.temperature.data.find(d => d.place === '香港天文台');
-                    const humidity = weatherData.humidity.data[0];
-                    const icon = weatherData.icon[0];
-                    const warnings = warningData.details || [];
+            setTimeout(() => {
+                messageArea.classList.remove('opacity-100');
+                messageArea.classList.add('opacity-0');
+            }, 3000);
+        }
+        
+        /** 更新玩家狀態顯示 */
+        function updatePlayerStats() {
+            playerStatsEl.innerHTML = `
+                <span>生命值: <span class="font-semibold text-white">${player.hp} / ${player.maxHp}</span></span>
+                <span class="ml-4">物品: <span class="font-semibold text-white">${player.inventory.length > 0 ? player.inventory.join(', ') : '無'}</span></span>
+            `;
+        }
 
-                    let warningsHtml = warnings.length === 0
-                        ? `<div class="bg-green-100 text-green-800 text-sm py-2 px-4 rounded-lg flex items-center"><i class="fas fa-check-circle mr-2"></i>目前沒有天氣警告</div>`
-                        : warnings.map(warn => `<div class="bg-yellow-100 text-yellow-800 text-sm py-2 px-4 rounded-lg flex items-center"><i class="fas fa-triangle-exclamation mr-2"></i>${warn.name}</div>`).join('');
+        /** 渲染指定場景 */
+        function renderScene(sceneId) {
+            const scene = gameData[sceneId];
+            if (!scene) {
+                console.error(`找不到場景: ${sceneId}`);
+                return;
+            }
 
-                    contentEl.innerHTML = `
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <p class="text-lg text-gray-600">${temp.place}</p>
-                                <p class="text-6xl font-bold text-gray-900 tracking-tighter">${temp.value}°C</p>
-                                <p class="text-gray-500">濕度: ${humidity.value}%</p>
-                            </div>
-                            <img src="https://www.hko.gov.hk/images/wxicon/pic${icon}.png" alt="天氣圖示" class="w-24 h-24" />
-                        </div>
-                        <div class="space-y-2">${warningsHtml}</div>`;
-                } catch (error) {
-                    console.error("獲取天氣失敗:", error);
-                    contentEl.innerHTML = `<p class="text-red-500">無法載入天氣資料。</p>`;
-                } finally {
-                    if (loaderEl) loaderEl.style.display = 'none';
-                }
-            };
-            
-            // --- 獲取及渲染港鐵資料 ---
-            const fetchMtrData = async () => {
-                const contentEl = document.getElementById('mtr-content');
-                const loaderEl = document.getElementById('mtr-loader');
-                try {
-                    const res = await fetch(API.MTR);
-                    if (!res.ok) throw new Error('無法連接港鐵伺服器');
-                    const data = await res.json();
-                    
-                    if (data.status === 0) { // status 0 表示有特別通告
-                        contentEl.innerHTML = `
-                            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-r-lg">
-                                <p class="font-bold">特別消息：</p>
-                                <p class="text-sm mt-1 whitespace-pre-wrap">${data.message.replace(/\\n/g, '\n')}</p>
-                            </div>`;
-                    } else { // status 1 表示服務正常
-                        contentEl.innerHTML = `
-                             <div class="bg-green-100 text-green-800 p-4 rounded-lg flex items-center justify-center h-full">
-                                <i class="fas fa-check-circle mr-3 text-2xl"></i>
-                                <span class="font-semibold text-lg">所有路綫服務正常</span>
-                            </div>`;
+            player.currentScene = sceneId;
+            gameTextEl.textContent = scene.text;
+            choicesEl.innerHTML = ''; // 清空舊選項
+
+            scene.choices.forEach(choice => {
+                const button = document.createElement('button');
+                button.textContent = choice.text;
+                button.className = "bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-md transition-transform transform hover:scale-105";
+                button.onclick = () => {
+                    if (choice.effect) {
+                        choice.effect();
                     }
-                } catch (error) {
-                    console.error("獲取港鐵數據失敗:", error);
-                    contentEl.innerHTML = `<p class="text-red-500">無法載入港鐵服務狀況。</p>`;
-                } finally {
-                    if (loaderEl) loaderEl.style.display = 'none';
+                    renderScene(choice.nextScene);
+                };
+                choicesEl.appendChild(button);
+            });
+            
+            updatePlayerStats();
+        }
+
+        // --- 存檔/讀檔邏輯 ---
+
+        const SAVE_KEY = 'textRPGSaveData'; // 在 localStorage 中儲存的鍵名
+
+        /** 儲存遊戲 */
+        function saveGame() {
+            const password = passwordInput.value;
+            if (!password) {
+                showMessage("儲存失敗：請輸入密碼！", true);
+                return;
+            }
+
+            try {
+                // 1. 將玩家物件轉換為 JSON 字串
+                const saveData = JSON.stringify(player);
+                // 2. 使用密碼對 JSON 字串進行 AES 加密
+                const encryptedData = CryptoJS.AES.encrypt(saveData, password).toString();
+                // 3. 將加密後的字串（這就是你的"代碼"）儲存到 localStorage
+                localStorage.setItem(SAVE_KEY, encryptedData);
+                
+                showMessage("遊戲進度已成功儲存！");
+                passwordInput.value = '';
+            } catch (e) {
+                showMessage("儲存時發生未知錯誤。", true);
+                console.error("Save error:", e);
+            }
+        }
+
+        /** 讀取遊戲 */
+        function loadGame() {
+            const password = passwordInput.value;
+            if (!password) {
+                showMessage("讀取失敗：請輸入密碼！", true);
+                return;
+            }
+
+            const encryptedData = localStorage.getItem(SAVE_KEY);
+            if (!encryptedData) {
+                showMessage("沒有找到任何存檔記錄。", true);
+                return;
+            }
+
+            try {
+                // 1. 使用密碼嘗試解密數據
+                const bytes = CryptoJS.AES.decrypt(encryptedData, password);
+                // 2. 將解密後的數據轉回 UTF-8 字串
+                const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+
+                // 如果解密後是空字串，代表密碼錯誤
+                if (!decryptedData) {
+                    throw new Error("Incorrect password");
                 }
-            };
 
-            // --- 獲取及渲染隧道資料 ---
-            const fetchTunnelData = async () => {
-                const contentEl = document.getElementById('tunnel-content');
-                const loaderEl = document.getElementById('tunnel-loader');
-                try {
-                    const res = await fetch(API.TUNNEL);
-                    if (!res.ok) throw new Error('無法連接運輸署伺服器');
-                    const data = await res.json();
-                    const tunnelMapping = {
-                        'CHT': '紅磡海底隧道',
-                        'EHC': '東區海底隧道',
-                        'WHC': '西區海底隧道'
-                    };
+                // 3. 將 JSON 字串解析回玩家物件
+                const loadedPlayerState = JSON.parse(decryptedData);
+                
+                // 4. 更新當前遊戲狀態
+                player = loadedPlayerState;
+                
+                // 5. 重新渲染遊戲場景
+                renderScene(player.currentScene);
+                
+                showMessage("遊戲進度已成功讀取！");
+                passwordInput.value = '';
 
-                    const statusMapping = {
-                        1: { text: '暢順', class: 'status-smooth' },
-                        2: { text: '緩慢', class: 'status-slow' },
-                        3: { text: '擠塞', class: 'status-congested' }
-                    };
-                    
-                    const tunnels = data.journey_time_indicators.filter(item => tunnelMapping[item.location_id]);
-                    
-                    contentEl.innerHTML = `
-                        <div class="space-y-4">
-                        ${tunnels.map(tunnel => {
-                            const status = statusMapping[tunnel.colour_id] || { text: '未知', class: '' };
-                            return `
-                                <div class="text-center">
-                                    <h3 class="font-bold text-lg">${tunnelMapping[tunnel.location_id]}</h3>
-                                    <p>
-                                        往 ${tunnel.direction === 'NB' ? '九龍' : '港島'}: 
-                                        <span class="font-semibold ${status.class}">${status.text}</span>
-                                        (${tunnel.journey_time} 分鐘)
-                                    </p>
-                                </div>
-                            `
-                        }).join('')}
-                        </div>
-                    `;
-                } catch (error) {
-                    console.error("獲取隧道數據失敗:", error);
-                    contentEl.innerHTML = `<p class="text-red-500">無法載入隧道行車時間。</p>`;
-                } finally {
-                     if (loaderEl) loaderEl.style.display = 'none';
-                }
-            };
+            } catch (e) {
+                showMessage("讀取失敗：密碼錯誤或存檔已損毀。", true);
+                console.error("Load error:", e);
+            }
+        }
 
+        // --- 事件監聽 ---
+        saveButton.addEventListener('click', saveGame);
+        loadButton.addEventListener('click', loadGame);
 
-            // --- 初始化及定時更新 ---
-            updateTime();
-            fetchWeatherData();
-            fetchMtrData();
-            fetchTunnelData();
+        // --- 遊戲初始化 ---
+        renderScene('start');
 
-            setInterval(updateTime, 1000); // 每秒更新時間
-            setInterval(fetchWeatherData, 10 * 60 * 1000); // 每 10 分鐘更新天氣
-            setInterval(fetchMtrData, 5 * 60 * 1000); // 每 5 分鐘更新港鐵
-            setInterval(fetchTunnelData, 2 * 60 * 1000); // 每 2 分鐘更新隧道
-        });
     </script>
 </body>
 </html>
-
 
