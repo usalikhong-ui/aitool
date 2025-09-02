@@ -1,61 +1,192 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-// --- Helper Functions & Constants ---
-
-const getApiKey = () => ""; // 在 Canvas 環境中會自動提供
-
+// --- 常數與設定 (Constants & Config) ---
 const HKO_API = {
     WEATHER: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc',
     WARNING: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc',
 };
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=`;
 
-// **新的模擬即時新聞服務**
-// 這個函數確保新聞日期永遠是當天
+const PANEL_CONFIG = {
+    INITIAL_RATIO: 0.45, // 初始高度佔螢幕的 45%
+    MIN_HEIGHT: 200,     // 最小 px 高度
+    MAX_BOTTOM_OFFSET: 150, // 距離底部的最小 px
+};
+
+// --- API 服務 (API Services) ---
+
+/**
+ * 帶有重試機制的通用 fetch 函式
+ * @param {string} url - 請求的 URL
+ * @param {object} options - Fetch 的設定選項
+ * @param {number} retries - 重試次數
+ * @returns {Promise<any>} - 解析後的 JSON 資料
+ */
+const fetchWithRetry = async (url, options = {}, retries = 3) => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error(`Attempt ${i + 1} failed for ${url}:`, error);
+            if (i < retries - 1) await new Promise(res => setTimeout(res, 1000 * (i + 1)));
+            else throw error;
+        }
+    }
+};
+
+
+/**
+ * 呼叫 Gemini API
+ * @param {Array<object>} chatHistory - 完整的聊天歷史紀錄
+ * @param {string} prompt - 當前的用戶輸入
+ * @returns {Promise<string>} - 模型的回應文字
+ */
+const callGeminiApi = async (chatHistory, prompt) => {
+    const apiKey = ""; // 在 Canvas 環境中會自動提供
+    const payload = {
+        contents: [
+            ...chatHistory.map(msg => ({ role: msg.role, parts: [{ text: msg.text }] })),
+            { role: "user", parts: [{ text: prompt }] }
+        ],
+        systemInstruction: {
+            parts: [{ text: "你是一個樂於助人的香港本地助理。請使用繁體中文（香港）和廣東話口語風格回答問題，讓回應感覺親切自然。" }]
+        }
+    };
+    const data = await fetchWithRetry(GEMINI_API_URL + apiKey, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    return data.candidates[0].content.parts[0].text;
+};
+
+
+// --- 模擬新聞服務 (Mock News Service) ---
 const getTodaysNews = () => {
-    const today = new Date().toISOString().split('T')[0]; // 自動獲取當天日期
+    const today = new Date().toISOString().split('T')[0];
     return [
         { id: 1, headline: '恆生指數高開後回軟 市場關注本周議息結果', content: '港股今日高開後走勢反覆，恆生指數最多升逾百點後轉跌。分析師指出，投資者普遍持觀望態度，等待美國聯儲局本周的議息結果，預計大市短期內將在現水平窄幅上落。科技股及金融股表現個別發展。', date: today, source: '信報財經' },
         { id: 2, headline: '政府公布新一輪交通規劃 擬建新鐵路連接北部都會區', content: '運輸及物流局今日公布最新的交通發展藍圖，重點之一是研究興建一條新的鐵路項目，以加強北部都會區與市區的連接。政府表示，新鐵路有助紓緩現有東鐵線的壓力，並配合未來北部地區的人口及經濟發展。', date: today, source: '香港電台 RTHK' },
         { id: 3, headline: '天文台預測本周天氣轉涼 市民需注意氣溫變化', content: '隨著一股東北季候風抵達華南沿岸，香港天文台預測本港未來數日天氣將會顯著轉涼，市區氣溫可能下降至攝氏18度左右。天文台提醒市民，特別是長者及長期病患者，應注意保暖，預防因氣溫急降引致的健康問題。', date: today, source: '香港天文台' },
-        { id: 4, headline: '西九文化區M+博物館舉辦新展覽 展出本地當代藝術', content: '西九文化區的M+博物館宣布，將於下月舉辦名為「光影之間」的專題展覽，聚焦多位香港本地當代藝術家的作品。展覽將透過攝影、錄像及互動裝置等不同媒介，探討城市景觀與個人記憶之間的關係。', date: today, source: '文匯報' },
-        { id: 5, headline: '食環署加強巡查 打擊店舖阻街及衛生問題', content: '為改善市容，食物環境衞生署近期在多個地區展開聯合執法行動，針對店舖非法佔用公眾地方及亂拋垃圾等問題發出定額罰款通知書。署方表示，將會持續進行相關執法工作，呼籲商戶自律守法。', date: today, source: '香港01' },
-        { id: 6, headline: '啟德體育園主場館結構封頂 預計明年啟用', content: '啟德體育園項目取得重要進展，其可容納五萬人的主場館結構已經順利封頂。體育園團隊表示，目前正全力進行內部裝修及設施安裝，目標是按計劃於明年正式啟用，屆時將可舉辦國際級的體育及文娛活動。', date: today, source: '商業電台' },
     ];
 };
 
+// --- 自訂掛鉤 (Custom Hooks) ---
 
-// --- React Components (與之前版本相同，此處省略以保持簡潔) ---
+/**
+ * 用於獲取天氣資料的 Hook
+ */
+const useWeatherData = () => {
+    const [weather, setWeather] = useState(null);
+    const [warnings, setWarnings] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-// 天氣圖示元件
-const WeatherIcon = ({ icon, className }) => {
-    if (!icon) return null;
-    const iconUrl = `https://www.hko.gov.hk/images/wxicon/pic${icon}.png`;
-    return <img src={iconUrl} alt="天氣圖示" className={className} onError={(e) => { e.target.style.display = 'none'; }} />;
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [weatherData, warningData] = await Promise.all([
+                    fetchWithRetry(HKO_API.WEATHER),
+                    fetchWithRetry(HKO_API.WARNING)
+                ]);
+                setWeather({
+                    temperature: weatherData.temperature,
+                    humidity: weatherData.humidity,
+                    icon: weatherData.icon,
+                    place: weatherData.temperature.data[0]?.place,
+                    uvindex: weatherData.uvindex,
+                });
+                setWarnings(warningData.details || []);
+            } catch (error) {
+                console.error("無法獲取天氣資料:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+        const intervalId = setInterval(fetchData, 10 * 60 * 1000); // 每 10 分鐘更新一次
+        return () => clearInterval(intervalId);
+    }, []);
+
+    return { weather, warnings, isLoading };
 };
 
-// 天氣警告元件
-const WeatherWarning = ({ warnings }) => {
-    if (!warnings || warnings.length === 0) {
-        return (
-            <div className="bg-green-500/20 text-green-300 text-sm py-2 px-4 rounded-lg flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-                目前沒有天氣警告
-            </div>
-        );
-    }
+/**
+ * 用於獲取新聞資料的 Hook
+ */
+const useNewsData = () => {
+    const [articles, setArticles] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const getWarningColor = (code) => {
-        const colorMap = {
-            'WFIRE': 'bg-orange-500/20 text-orange-300', 'WFROST': 'bg-blue-500/20 text-blue-300',
-            'WHOT': 'bg-red-500/20 text-red-300', 'WCOLD': 'bg-cyan-500/20 text-cyan-300',
-            'WMSGNL': 'bg-yellow-500/20 text-yellow-300', 'WRAIN': 'bg-yellow-500/20 text-yellow-300',
-            'WFNTSA': 'bg-gray-500/20 text-gray-300', 'WL': 'bg-purple-500/20 text-purple-300',
-            'WTCSGNL': 'bg-red-600/30 text-red-400', 'TS': 'bg-yellow-600/30 text-yellow-400',
+    useEffect(() => {
+        setIsLoading(true);
+        setTimeout(() => {
+            setArticles(getTodaysNews());
+            setIsLoading(false);
+        }, 800); // 模擬網絡延遲
+    }, []);
+
+    return { articles, isLoading };
+};
+
+/**
+ * 用於處理可調整大小面板邏輯的 Hook
+ * @param {object} config - 面板設定
+ */
+const useResizablePanel = (config) => {
+    const [panelHeight, setPanelHeight] = useState(window.innerHeight * config.INITIAL_RATIO);
+    const panelRef = useRef(null);
+
+    const handleDragStart = useCallback((e) => {
+        e.preventDefault();
+        const startY = e.touches ? e.touches[0].clientY : e.clientY;
+        const initialHeight = panelRef.current.getBoundingClientRect().height;
+
+        const handleDragMove = (moveEvent) => {
+            const currentY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
+            const deltaY = currentY - startY;
+            const newHeight = initialHeight + deltaY;
+            const maxHeight = window.innerHeight - config.MAX_BOTTOM_OFFSET;
+            setPanelHeight(Math.max(config.MIN_HEIGHT, Math.min(newHeight, maxHeight)));
         };
-        const warningType = code.split('-')[0];
-        return colorMap[warningType] || 'bg-gray-500/20 text-gray-300';
-    };
 
+        const handleDragEnd = () => {
+            document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+            document.removeEventListener('touchmove', handleDragMove);
+            document.removeEventListener('touchend', handleDragEnd);
+        };
+
+        document.addEventListener('mousemove', handleDragMove);
+        document.addEventListener('mouseup', handleDragEnd);
+        document.addEventListener('touchmove', handleDragMove);
+        document.addEventListener('touchend', handleDragEnd);
+    }, [config]);
+
+    return { panelRef, panelHeight, handleDragStart };
+};
+
+
+// --- 元件 (Components) ---
+// 為了簡潔，這裡省略了 WeatherIcon, WeatherWarning, WeatherWidget, NewsWidget, ChatWidget 的程式碼，
+// 它們的內部實現與原版相同。
+// **重點是在下方將它們包裹在 React.memo 中**。
+
+const WeatherIcon = ({ icon, className }) => {
+    if (!icon) return null;
+    return <img src={`https://www.hko.gov.hk/images/wxicon/pic${icon}.png`} alt="天氣圖示" className={className} onError={(e) => { e.target.style.display = 'none'; }} />;
+};
+
+const WeatherWarning = ({ warnings }) => {
+    if (!warnings || warnings.length === 0) return (
+        <div className="bg-green-500/20 text-green-300 text-sm py-2 px-4 rounded-lg flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            目前沒有天氣警告
+        </div>
+    );
+    const getWarningColor = (code) => ({'WFIRE': 'bg-orange-500/20 text-orange-300','WFROST': 'bg-blue-500/20 text-blue-300','WHOT': 'bg-red-500/20 text-red-300','WCOLD': 'bg-cyan-500/20 text-cyan-300','WMSGNL': 'bg-yellow-500/20 text-yellow-300','WRAIN': 'bg-yellow-500/20 text-yellow-300','WFNTSA': 'bg-gray-500/20 text-gray-300','WL': 'bg-purple-500/20 text-purple-300','WTCSGNL': 'bg-red-600/30 text-red-400','TS': 'bg-yellow-600/30 text-yellow-400',})[code.split('-')[0]] || 'bg-gray-500/20 text-gray-300';
     return (
         <div className="space-y-2">
             {warnings.map((warn, index) => (
@@ -68,20 +199,15 @@ const WeatherWarning = ({ warnings }) => {
     );
 };
 
-// 天氣資訊主元件
-const WeatherWidget = ({ weather, warnings, loading }) => {
-    if (loading) {
-        return (
-            <div className="p-4 bg-gray-800/50 rounded-lg animate-pulse">
-                <div className="h-6 bg-gray-700 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-700 rounded w-1/2"></div>
-            </div>
-        );
-    }
+const MemoizedWeatherWidget = React.memo(({ weather, warnings, loading }) => {
+    if (loading) return (
+        <div className="p-4 bg-gray-800/50 rounded-lg animate-pulse">
+            <div className="h-6 bg-gray-700 rounded w-3/4 mb-2"></div>
+            <div className="h-4 bg-gray-700 rounded w-1/2"></div>
+        </div>
+    );
     if (!weather) return null;
-
     const { temperature, humidity, icon: iconId, uvindex } = weather;
-
     return (
         <div className="p-4 bg-gradient-to-br from-blue-900/50 to-gray-900/50 backdrop-blur-sm rounded-lg border border-white/10 shadow-lg">
             <div className="flex justify-between items-start">
@@ -98,45 +224,37 @@ const WeatherWidget = ({ weather, warnings, loading }) => {
             <div className="mt-4">
                 <WeatherWarning warnings={warnings} />
             </div>
-            <div className="mt-3 text-right text-xs text-gray-500">
-                資料來源：香港天文台
-            </div>
+            <div className="mt-3 text-right text-xs text-gray-500">資料來源：香港天文台</div>
         </div>
     );
-};
+});
 
-
-// 新聞元件
-const NewsWidget = ({ articles, onSelect, selectedArticle, onBack, loading }) => {
-    if (loading) {
-        return (
-            <div className="space-y-3 p-4">
-                {[...Array(5)].map((_, i) => (
-                    <div key={i} className="bg-gray-800/50 p-4 rounded-lg animate-pulse">
-                        <div className="h-5 bg-gray-700 rounded w-full mb-2"></div>
-                        <div className="h-3 bg-gray-700 rounded w-3/4"></div>
-                    </div>
-                ))}
-            </div>
-        );
-    }
-
-    if (selectedArticle) {
-        return (
-            <div className="p-4 text-white flex-1 overflow-y-auto">
-                <button onClick={onBack} className="mb-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m15 18-6-6 6-6"></path></svg>
-                    返回列表
-                </button>
-                <div className="flex items-center justify-between mb-3 text-sm text-gray-400 border-b border-gray-700 pb-2">
-                    <span>來源：{selectedArticle.source}</span>
-                    <span>日期：{selectedArticle.date}</span>
+const MemoizedNewsWidget = React.memo(({ articles, onSelect, selectedArticle, onBack, loading }) => {
+     if (loading) return (
+        <div className="space-y-3 p-4">
+            {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-gray-800/50 p-4 rounded-lg animate-pulse">
+                    <div className="h-5 bg-gray-700 rounded w-full mb-2"></div>
+                    <div className="h-3 bg-gray-700 rounded w-3/4"></div>
                 </div>
-                <h2 className="text-2xl font-bold mb-3">{selectedArticle.headline}</h2>
-                <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{selectedArticle.content}</p>
+            ))}
+        </div>
+    );
+
+    if (selectedArticle) return (
+        <div className="p-4 text-white flex-1 overflow-y-auto">
+             <button onClick={onBack} className="mb-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center">
+               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m15 18-6-6 6-6"></path></svg>
+                返回列表
+            </button>
+            <div className="flex items-center justify-between mb-3 text-sm text-gray-400 border-b border-gray-700 pb-2">
+                <span>來源：{selectedArticle.source}</span>
+                <span>日期：{selectedArticle.date}</span>
             </div>
-        );
-    }
+            <h2 className="text-2xl font-bold mb-3">{selectedArticle.headline}</h2>
+            <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{selectedArticle.content}</p>
+        </div>
+    );
 
     return (
         <div className="text-white">
@@ -154,10 +272,9 @@ const NewsWidget = ({ articles, onSelect, selectedArticle, onBack, loading }) =>
             </ul>
         </div>
     );
-};
+});
 
-// 對話視窗元件
-const ChatWidget = ({ history, onSendMessage, userInput, setUserInput, isLoading, selectedArticle, weather }) => {
+const MemoizedChatWidget = React.memo(({ history, onSendMessage, userInput, setUserInput, isLoading, selectedArticle, weather }) => {
     const chatEndRef = useRef(null);
 
     useEffect(() => {
@@ -168,201 +285,101 @@ const ChatWidget = ({ history, onSendMessage, userInput, setUserInput, isLoading
         e.preventDefault();
         if (userInput.trim() && !isLoading) {
             let context = "";
-            if(selectedArticle) {
-                context += `關於這則新聞（來源：${selectedArticle.source}, 日期：${selectedArticle.date}）：\n標題：${selectedArticle.headline}\n內容：${selectedArticle.content}\n\n`;
-            }
-            if(weather) {
-                 context += `目前的香港天氣資訊：\n溫度：${weather.temperature?.data[0]?.value}°C\n濕度：${weather.humidity?.data[0]?.value}%\n\n`;
-            }
-            
-            const fullPrompt = context ? `${context}我的問題是：「${userInput}」` : userInput;
-            onSendMessage(fullPrompt);
+            if(selectedArticle) context += `關於這則新聞（來源：${selectedArticle.source}）:\n標題：${selectedArticle.headline}\n內容：${selectedArticle.content}\n\n`;
+            if(weather) context += `目前的香港天氣資訊：\n溫度：${weather.temperature?.data[0]?.value}°C\n濕度：${weather.humidity?.data[0]?.value}%\n\n`;
+            onSendMessage(context ? `${context}我的問題是：「${userInput}」` : userInput);
         }
     };
-    
+
     return (
         <div className="bg-gray-900/70 backdrop-blur-sm flex flex-col h-full">
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {history.map((msg, index) => (
                     <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-xs md:max-w-md lg:max-w-lg rounded-2xl px-4 py-2 ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-700 text-gray-200 rounded-bl-none'}`}>
-                           <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                            <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                         </div>
                     </div>
                 ))}
-                 {isLoading && (
+                {isLoading && (
                     <div className="flex justify-start">
                         <div className="bg-gray-700 text-gray-200 rounded-2xl rounded-bl-none px-4 py-2">
-                           <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-75"></div>
                                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150"></div>
                                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-300"></div>
-                           </div>
+                            </div>
                         </div>
                     </div>
                 )}
                 <div ref={chatEndRef} />
             </div>
             <form onSubmit={handleSubmit} className="p-3 border-t border-white/10 flex items-center space-x-2">
-                <input
-                    type="text"
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="在這裡輸入問題..."
-                    className="flex-1 bg-gray-800 border border-gray-600 rounded-full py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={isLoading}
-                />
+                <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="在這裡輸入問題..." className="flex-1 bg-gray-800 border border-gray-600 rounded-full py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={isLoading} />
                 <button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-500 text-white rounded-full p-3 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                 </button>
             </form>
         </div>
     );
-};
+});
 
 
-// 主應用程式 App
+// --- 主應用程式 (Main App) ---
 export default function App() {
     // --- State Management ---
-    const [weather, setWeather] = useState(null);
-    const [warnings, setWarnings] = useState([]);
-    const [articles, setArticles] = useState([]);
+    const { weather, warnings, isLoading: isWeatherLoading } = useWeatherData();
+    const { articles, isLoading: isNewsLoading } = useNewsData();
+    const { panelRef, panelHeight, handleDragStart } = useResizablePanel(PANEL_CONFIG);
+
     const [selectedArticle, setSelectedArticle] = useState(null);
     const [chatHistory, setChatHistory] = useState([
         { role: 'model', text: '你好！我可以回答關於天氣、新聞或者任何你想知道嘅問題。' }
     ]);
     const [userInput, setUserInput] = useState('');
-    const [loading, setLoading] = useState({ weather: true, news: true, chat: false });
-    
-    const [topPanelHeight, setTopPanelHeight] = useState(window.innerHeight / 2.2);
-    const topSectionRef = useRef(null);
+    const [isChatLoading, setIsChatLoading] = useState(false);
 
-    // --- Drag Handler ---
-    const handleDragStart = useCallback((e) => {
-        e.preventDefault();
-        const startY = e.touches ? e.touches[0].clientY : e.clientY;
-        const initialHeight = topSectionRef.current.getBoundingClientRect().height;
-
-        const handleDragMove = (moveEvent) => {
-            const currentY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
-            const deltaY = currentY - startY;
-            const newHeight = initialHeight + deltaY;
-            const minHeight = 200;
-            const maxHeight = window.innerHeight - 150;
-            setTopPanelHeight(Math.max(minHeight, Math.min(newHeight, maxHeight)));
-        };
-
-        const handleDragEnd = () => {
-            document.removeEventListener('mousemove', handleDragMove);
-            document.removeEventListener('mouseup', handleDragEnd);
-            document.removeEventListener('touchmove', handleDragMove);
-            document.removeEventListener('touchend', handleDragEnd);
-        };
-
-        document.addEventListener('mousemove', handleDragMove);
-        document.addEventListener('mouseup', handleDragEnd);
-        document.addEventListener('touchmove', handleDragMove);
-        document.addEventListener('touchend', handleDragEnd);
-    }, []);
-
-    // --- Data Fetching ---
-    const fetchWithRetry = useCallback(async (url, options = {}, retries = 3, delay = 1000) => {
-        for (let i = 0; i < retries; i++) {
-            try {
-                const response = await fetch(url, options);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return await response.json();
-            } catch (error) {
-                console.error(`Attempt ${i + 1} failed for ${url}:`, error);
-                if (i < retries - 1) await new Promise(res => setTimeout(res, delay * (i + 1)));
-                else throw error;
-            }
-        }
-    }, []);
-    
-    // **天氣獲取 (不變)**
-    useEffect(() => {
-        const fetchWeather = async () => {
-            setLoading(prev => ({ ...prev, weather: true }));
-            try {
-                const [weatherData, warningData] = await Promise.all([ fetchWithRetry(HKO_API.WEATHER), fetchWithRetry(HKO_API.WARNING) ]);
-                setWeather({
-                    temperature: weatherData.temperature, humidity: weatherData.humidity, icon: weatherData.icon,
-                    place: weatherData.temperature.data[0]?.place, uvindex: weatherData.uvindex,
-                });
-                setWarnings(warningData.details || []);
-            } catch (error) { console.error("無法獲取天氣資料:", error); } 
-            finally { setLoading(prev => ({ ...prev, weather: false })); }
-        };
-        fetchWeather();
-    }, [fetchWithRetry]);
-
-    // **新聞獲取 (已更新為穩定版本)**
-    useEffect(() => {
-        setLoading(prev => ({ ...prev, news: true }));
-        // 模擬網絡延遲，讓加載動畫更自然
-        setTimeout(() => {
-            setArticles(getTodaysNews());
-            setLoading(prev => ({ ...prev, news: false }));
-        }, 800);
-    }, []);
-
-
-    // --- Gemini Chat Logic ---
-    const handleSendMessage = async (prompt) => {
+    // --- Chat Logic ---
+    const handleSendMessage = useCallback(async (prompt) => {
         if (!prompt.trim()) return;
 
         const newUserMessage = { role: 'user', text: userInput };
-        setChatHistory(prev => [...prev, newUserMessage]);
+        const newChatHistory = [...chatHistory, newUserMessage];
+        
+        setChatHistory(newChatHistory);
         setUserInput('');
-        setLoading(prev => ({ ...prev, chat: true }));
-
-        const apiKey = getApiKey();
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-        const payload = {
-            contents: [
-                ...chatHistory.map(msg => ({ role: msg.role, parts: [{ text: msg.text }] })),
-                { role: "user", parts: [{ text: prompt }] }
-            ],
-             systemInstruction: {
-                parts: [{ text: "你是一個樂於助人的香港本地助理。請使用繁體中文（香港）和廣東話口語風格回答問題，讓回應感覺親切自然。" }]
-            }
-        };
+        setIsChatLoading(true);
 
         try {
-            const data = await fetchWithRetry(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            const modelResponse = data.candidates[0].content.parts[0].text;
+            const modelResponse = await callGeminiApi(chatHistory, prompt);
             setChatHistory(prev => [...prev, { role: 'model', text: modelResponse }]);
         } catch (error) {
             console.error("與 Gemini API 通訊失敗:", error);
             setChatHistory(prev => [...prev, { role: 'model', text: '對唔住，我暫時無法回覆。請稍後再試。' }]);
         } finally {
-            setLoading(prev => ({ ...prev, chat: false }));
+            setIsChatLoading(false);
         }
-    };
-    
+    }, [chatHistory, userInput]); // 依賴項應包含會影響函式內容的 state
+
     return (
         <div className="bg-gray-900 text-white h-screen w-full font-sans flex flex-col overflow-hidden">
-            <div
-                ref={topSectionRef}
-                style={{ height: `${topPanelHeight}px`, flexShrink: 0 }}
-                className="flex flex-col overflow-hidden"
-            >
+            {/* --- 上方可調整大小的面板 --- */}
+            <div ref={panelRef} style={{ height: `${panelHeight}px` }} className="flex flex-col overflow-hidden flex-shrink-0">
                 <div className="p-3 flex-shrink-0">
-                    <WeatherWidget weather={weather} warnings={warnings} loading={loading.weather} />
+                    <MemoizedWeatherWidget weather={weather} warnings={warnings} loading={isWeatherLoading} />
                 </div>
                 <div className="flex-1 overflow-y-auto">
-                    <NewsWidget
+                    <MemoizedNewsWidget
                         articles={articles}
                         selectedArticle={selectedArticle}
                         onSelect={setSelectedArticle}
                         onBack={() => setSelectedArticle(null)}
-                        loading={loading.news}
+                        loading={isNewsLoading}
                     />
                 </div>
             </div>
 
+            {/* --- 拖曳控制器 --- */}
             <div
                 onMouseDown={handleDragStart}
                 onTouchStart={handleDragStart}
@@ -372,13 +389,14 @@ export default function App() {
                 <div className="w-10 h-1 bg-gray-600 rounded-full"></div>
             </div>
 
+            {/* --- 下方面板 (聊天) --- */}
             <div className="flex-1 min-h-0">
-                 <ChatWidget
+                <MemoizedChatWidget
                     history={chatHistory}
                     onSendMessage={handleSendMessage}
                     userInput={userInput}
                     setUserInput={setUserInput}
-                    isLoading={loading.chat}
+                    isLoading={isChatLoading}
                     selectedArticle={selectedArticle}
                     weather={weather}
                 />
@@ -386,4 +404,3 @@ export default function App() {
         </div>
     );
 }
-
