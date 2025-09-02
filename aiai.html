@@ -1,467 +1,270 @@
 <!DOCTYPE html>
-<!-- 
-  重要提示：請務必將此檔案命名為 index.html 並上傳到你的 GitHub Pages Repository。
-  瀏覽器會直接讀取此檔案來運行整個應用程式。
--->
-<html lang="zh-Hant">
+<html lang="zh-HK">
 <head>
-    <!-- 關鍵：設定 UTF-8 編碼，解決中文亂碼問題 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>香港助理儀表板 (瀏覽器 AI 版)</title>
-    
+    <title>香港即時資訊儀表板</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 引入 React 核心程式庫 -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
-    <!-- 引入 Babel，用嚟喺瀏覽器直接轉換 JSX 語法 -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
+    <!-- 引入 Google Fonts 和 Font Awesome 圖示 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* 基本樣式，確保體驗順暢 */
+        /* 自訂樣式 */
         body {
-            margin: 0;
-            overscroll-behavior: none; /* 防止喺移動裝置上拉時出現奇怪嘅捲動效果 */
+            font-family: 'Inter', 'Noto Sans HK', sans-serif;
+            background-color: #f0f2f5; /* 淺灰色背景 */
+        }
+        .info-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px_12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+        }
+        .info-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #1F2937;
+            border-bottom: 3px solid #3B82F6;
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+        .transport-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background-color: #F9FAFB;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #374151;
+            font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .transport-link:hover {
+            background-color: #3B82F6;
+            color: white;
+        }
+        /* 狀態顏色 */
+        .status-smooth { color: #10B981; } /* 綠色 - 良好/暢順 */
+        .status-slow { color: #F59E0B; }   /* 橙色 - 緩慢/延誤 */
+        .status-congested { color: #EF4444; } /* 紅色 - 擠塞 */
+
+        /* 讀取中的動畫 */
+        .loading-placeholder {
+            background-color: #e5e7eb;
+            border-radius: 0.5rem;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            50% { opacity: .5; }
         }
     </style>
 </head>
-<body>
-    <!-- React App 會掛載喺呢個 div 上面 -->
-    <div id="root"></div>
+<body class="antialiased text-gray-800">
 
-    <!-- 你的 React 程式碼，記得將 type 設定為 "text/babel" -->
-    <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback } = React;
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <!-- 頁面標題 -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">香港即時資訊儀表板</h1>
+            <p class="text-gray-600 mt-2">一站式查看天氣、交通及港鐵狀況</p>
+            <p class="text-sm text-gray-500 mt-2">最後更新時間：<span id="last-updated"></span></p>
+        </header>
 
-        // --- 常數與設定 (Constants & Config) ---
-        const HKO_API = {
-            WEATHER: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc',
-            WARNING: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc',
-        };
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
 
-        const PANEL_CONFIG = {
-            INITIAL_RATIO: 0.45, // 初始高度佔螢幕的 45%
-            MIN_HEIGHT: 200,     // 最小 px 高度
-            MAX_BOTTOM_OFFSET: 150, // 距離底部的最小 px
-        };
-
-        // --- API 服務 (API Services) ---
-
-        /**
-         * 帶有重試機制的通用 fetch 函式
-         * @param {string} url - 請求的 URL
-         * @param {object} options - Fetch 的設定選項
-         * @param {number} retries - 重試次數
-         * @returns {Promise<any>} - 解析後的 JSON 資料
-         */
-        const fetchWithRetry = async (url, options = {}, retries = 3) => {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return await response.json();
-                } catch (error) {
-                    console.error(`Attempt ${i + 1} failed for ${url}:`, error);
-                    if (i < retries - 1) await new Promise(res => setTimeout(res, 1000 * (i + 1)));
-                    else throw error;
-                }
-            }
-        };
-
-        /**
-         * 呼叫瀏覽器內建的 AI (window.ai)
-         * @param {string} prompt - 完整的提示文字，包含歷史、上下文和最新問題
-         * @returns {Promise<string>} - 模型的回應文字
-         */
-        const callBrowserAi = async (prompt) => {
-            if (!window.ai || typeof window.ai.createTextSession !== 'function') {
-                return "對唔住，你嘅瀏覽器好似唔支援內建 AI 功能。請試下用一個支援嘅瀏覽器，例如最新版嘅 Chrome。";
-            }
-            try {
-                // 'default' 選項會自動選擇最適合的裝置上模型
-                const session = await window.ai.createTextSession({topK: 3});
-                const response = await session.prompt(prompt);
-                return response;
-            } catch (error) {
-                console.error("呼叫瀏覽器 AI 時發生錯誤:", error);
-                return "哎呀，執行 AI 功能時遇到啲問題，請稍後再試。";
-            }
-        };
-
-
-        // --- 模擬港鐵資訊服務 (Mock MTR Service) ---
-        const getMtrInfo = () => {
-            return {
-                lastUpdated: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                lines: [
-                    { id: 'TCL', name: '東涌綫', status: '良好', statusColor: 'bg-green-500' },
-                    { id: 'AEL', name: '機場快綫', status: '良好', statusColor: 'bg-green-500' },
-                    { id: 'TML', name: '屯馬綫', status: '服務稍有延誤', statusColor: 'bg-yellow-500', details: '由於屯門站附近有信號故障，屯馬綫來往屯門站及烏溪沙站的行車時間預計需要額外5-8分鐘。' },
-                    { id: 'TWL', name: '荃灣綫', status: '良好', statusColor: 'bg-green-500' },
-                    { id: 'KTL', name: '觀塘綫', status: '良好', statusColor: 'bg-green-500' },
-                    { id: 'ISL', name: '港島綫', status: '良好', statusColor: 'bg-green-500' },
-                    { id: 'TKL', name: '將軍澳綫', status: '良好', statusColor: 'bg-green-500' },
-                    { id: 'EAL', name: '東鐵綫', status: '良好', statusColor: 'bg-green-500' },
-                ]
-            };
-        };
-
-        // --- 自訂掛鉤 (Custom Hooks) ---
-
-        /**
-         * 用於獲取天氣資料的 Hook
-         */
-        const useWeatherData = () => {
-            const [weather, setWeather] = useState(null);
-            const [warnings, setWarnings] = useState([]);
-            const [isLoading, setIsLoading] = useState(true);
-
-            useEffect(() => {
-                const fetchData = async () => {
-                    setIsLoading(true);
-                    try {
-                        const [weatherData, warningData] = await Promise.all([
-                            fetchWithRetry(HKO_API.WEATHER),
-                            fetchWithRetry(HKO_API.WARNING)
-                        ]);
-                        setWeather({
-                            temperature: weatherData.temperature,
-                            humidity: weatherData.humidity,
-                            icon: weatherData.icon,
-                            place: weatherData.temperature.data[0]?.place,
-                            uvindex: weatherData.uvindex,
-                        });
-                        setWarnings(warningData.details || []);
-                    } catch (error) {
-                        console.error("無法獲取天氣資料:", error);
-                    } finally {
-                        setIsLoading(false);
-                    }
-                };
-                fetchData();
-                const intervalId = setInterval(fetchData, 10 * 60 * 1000); // 每 10 分鐘更新一次
-                return () => clearInterval(intervalId);
-            }, []);
-
-            return { weather, warnings, isLoading };
-        };
-        
-        /**
-         * 用於獲取港鐵資訊的 Hook
-         */
-        const useMtrData = () => {
-            const [mtrInfo, setMtrInfo] = useState({ lines: [], lastUpdated: null });
-            const [isLoading, setIsLoading] = useState(true);
-
-            useEffect(() => {
-                const fetchData = () => {
-                    setIsLoading(true);
-                    // 模擬網絡延遲
-                    setTimeout(() => {
-                        setMtrInfo(getMtrInfo());
-                        setIsLoading(false);
-                    }, 600);
-                };
-                fetchData();
-                const intervalId = setInterval(fetchData, 5 * 60 * 1000); // 每 5 分鐘更新一次
-                return () => clearInterval(intervalId);
-            }, []);
-
-            return { mtrInfo, isLoading };
-        };
-
-
-        /**
-         * 用於處理可調整大小面板邏輯的 Hook
-         * @param {object} config - 面板設定
-         */
-        const useResizablePanel = (config) => {
-            const [panelHeight, setPanelHeight] = useState(window.innerHeight * config.INITIAL_RATIO);
-            const panelRef = useRef(null);
-
-            const handleDragStart = useCallback((e) => {
-                e.preventDefault();
-                const startY = e.touches ? e.touches[0].clientY : e.clientY;
-                const initialHeight = panelRef.current.getBoundingClientRect().height;
-
-                const handleDragMove = (moveEvent) => {
-                    const currentY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY;
-                    const deltaY = currentY - startY;
-                    const newHeight = initialHeight + deltaY;
-                    const maxHeight = window.innerHeight - config.MAX_BOTTOM_OFFSET;
-                    setPanelHeight(Math.max(config.MIN_HEIGHT, Math.min(newHeight, maxHeight)));
-                };
-
-                const handleDragEnd = () => {
-                    document.removeEventListener('mousemove', handleDragMove);
-                    document.removeEventListener('mouseup', handleDragEnd);
-                    document.removeEventListener('touchmove', handleDragMove);
-                    document.removeEventListener('touchend', handleDragEnd);
-                };
-
-                document.addEventListener('mousemove', handleDragMove);
-                document.addEventListener('mouseup', handleDragEnd);
-                document.addEventListener('touchmove', handleDragMove);
-                document.addEventListener('touchend', handleDragEnd);
-            }, [config]);
-
-            return { panelRef, panelHeight, handleDragStart };
-        };
-
-
-        // --- 元件 (Components) ---
-        
-        const WeatherIcon = ({ icon, className }) => {
-            if (!icon) return null;
-            return <img src={`https://www.hko.gov.hk/images/wxicon/pic${icon}.png`} alt="天氣圖示" className={className} onError={(e) => { e.target.style.display = 'none'; }} />;
-        };
-
-        const WeatherWarning = ({ warnings }) => {
-            if (!warnings || warnings.length === 0) return (
-                <div className="bg-green-500/20 text-green-300 text-sm py-2 px-4 rounded-lg flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-                    目前沒有天氣警告
+            <!-- 天氣資訊 -->
+            <div class="info-card lg:col-span-1">
+                <h2 class="section-title"><i class="fas fa-cloud-sun mr-2"></i> 天氣實況</h2>
+                <div id="weather-content" class="flex-grow">
+                    <!-- 讀取中提示 -->
+                    <div id="weather-loader">
+                        <div class="h-8 w-3/4 loading-placeholder mb-4"></div>
+                        <div class="h-16 w-1/2 loading-placeholder mb-4"></div>
+                        <div class="h-6 w-full loading-placeholder"></div>
+                    </div>
+                    <!-- 天氣資料將會注入這裡 -->
                 </div>
-            );
-            const getWarningColor = (code) => ({'WFIRE': 'bg-orange-500/20 text-orange-300','WFROST': 'bg-blue-500/20 text-blue-300','WHOT': 'bg-red-500/20 text-red-300','WCOLD': 'bg-cyan-500/20 text-cyan-300','WMSGNL': 'bg-yellow-500/20 text-yellow-300','WRAIN': 'bg-yellow-500/20 text-yellow-300','WFNTSA': 'bg-gray-500/20 text-gray-300','WL': 'bg-purple-500/20 text-purple-300','WTCSGNL': 'bg-red-600/30 text-red-400','TS': 'bg-yellow-600/30 text-yellow-400',})[code.split('-')[0]] || 'bg-gray-500/20 text-gray-300';
-            return (
-                <div className="space-y-2">
-                    {warnings.map((warn, index) => (
-                        <div key={index} className={`${getWarningColor(warn.warnType)} text-sm py-2 px-4 rounded-lg flex items-center`}>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 flex-shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
-                            <span>{warn.name}</span>
-                        </div>
-                    ))}
-                </div>
-            );
-        };
+                <p class="text-xs text-gray-500 mt-4 text-center">資料來源：香港天文台</p>
+            </div>
 
-        const MemoizedWeatherWidget = React.memo(({ weather, warnings, loading }) => {
-            if (loading) return (
-                <div className="p-4 bg-gray-800/50 rounded-lg animate-pulse">
-                    <div className="h-6 bg-gray-700 rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-gray-700 rounded w-1/2"></div>
-                </div>
-            );
-            if (!weather) return null;
-            const { temperature, humidity, icon: iconId, uvindex } = weather;
-            return (
-                <div className="p-4 bg-gradient-to-br from-blue-900/50 to-gray-900/50 backdrop-blur-sm rounded-lg border border-white/10 shadow-lg">
-                    <div className="flex justify-between items-start">
+            <!-- 港鐵行車狀況 -->
+            <div class="info-card lg:col-span-1">
+                 <h2 class="section-title"><i class="fas fa-train-subway mr-2"></i> 港鐵行車狀況</h2>
+                 <div id="mtr-content" class="flex-grow">
+                    <!-- 讀取中提示 -->
+                     <div id="mtr-loader" class="space-y-3">
+                        <div class="h-10 w-full loading-placeholder"></div>
+                        <div class="h-10 w-full loading-placeholder"></div>
+                        <div class="h-10 w-full loading-placeholder"></div>
+                        <div class="h-10 w-full loading-placeholder"></div>
+                    </div>
+                    <!-- 港鐵資料將會注入這裡 -->
+                 </div>
+                 <p class="text-xs text-gray-500 mt-4 text-center">最後更新：<span id="mtr-last-updated">--:--</span></p>
+            </div>
+            
+            <!-- 過海隧道 -->
+            <div class="space-y-6 lg:col-span-1">
+                <!-- 過海隧道行車時間 -->
+                <div class="info-card">
+                    <h2 class="section-title"><i class="fas fa-car-tunnel mr-2"></i> 過海隧道</h2>
+                    <div class="space-y-4 text-center">
+                        <!-- 靜態數據，可手動更新或未來接駁 API -->
                         <div>
-                            <p className="text-lg text-gray-300">{weather.place || '香港'}</p>
-                            <p className="text-5xl font-bold text-white tracking-tighter">{temperature?.data[0]?.value}°C</p>
-                            <p className="text-gray-400">濕度: {humidity?.data[0]?.value}%</p>
-                            {uvindex && <p className="text-gray-400">紫外線指數: {uvindex.data[0].value} ({uvindex.data[0].desc})</p>}
+                            <h3 class="font-bold text-lg">紅磡海底隧道</h3>
+                            <p>往九龍：<span class="font-semibold status-slow">緩慢</span> | 往港島：<span class="font-semibold status-smooth">正常</span></p>
                         </div>
-                        <div className="flex flex-col items-center">
-                            <WeatherIcon icon={iconId[0]} className="w-20 h-20" />
+                        <div>
+                            <h3 class="font-bold text-lg">西區海底隧道</h3>
+                             <p>往九龍：<span class="font-semibold status-smooth">正常</span> | 往港島：<span class="font-semibold status-smooth">正常</span></p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-lg">東區海底隧道</h3>
+                             <p>往九龍：<span class="font-semibold status-slow">緩慢</span> | 往港島：<span class="font-semibold status-congested">擠塞</span></p>
                         </div>
                     </div>
-                    <div className="mt-4">
-                        <WeatherWarning warnings={warnings} />
-                    </div>
-                    <div className="mt-3 text-right text-xs text-gray-500">資料來源：香港天文台</div>
+                     <p class="text-xs text-gray-500 mt-4 text-center">
+                        數據僅供參考，最新狀況請查閱<a href="https://www.td.gov.hk" target="_blank" class="text-blue-600 hover:underline">運輸署</a>。
+                    </p>
                 </div>
-            );
-        });
+            </div>
 
-        const MemoizedMtrWidget = React.memo(({ mtrInfo, loading }) => {
-            if (loading) return (
-                <div className="space-y-3 p-4">
-                    {[...Array(5)].map((_, i) => (
-                        <div key={i} className="bg-gray-800/50 p-4 rounded-lg animate-pulse flex justify-between items-center">
-                            <div className="h-5 bg-gray-700 rounded w-1/3"></div>
-                            <div className="h-5 bg-gray-700 rounded-full w-1/4"></div>
-                        </div>
-                    ))}
-                </div>
-            );
+        </main>
 
-            return (
-                 <div className="text-white">
-                    <h2 className="text-xl font-bold p-4 pb-2">港鐵最新行車資訊</h2>
-                    <ul className="space-y-2 px-4 pb-2">
-                        {mtrInfo.lines.map((line) => (
-                            <li key={line.id} className="flex items-center justify-between bg-gray-800/50 p-3 rounded-lg">
-                                <span className="font-semibold text-base">{line.name}</span>
-                                <span className={`px-3 py-1 text-sm font-bold text-white rounded-full ${line.statusColor}`}>
-                                    {line.status}
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
-                    <div className="px-4 py-2 space-y-2">
-                        {mtrInfo.lines.filter(l => l.details).map(line => (
-                            <div key={`${line.id}-details`} className="bg-yellow-500/10 border-l-4 border-yellow-500 text-yellow-300 p-3 rounded-r-lg">
-                                <p className="font-bold">{line.name} 服務更新：</p>
-                                <p className="text-sm">{line.details}</p>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="mt-2 px-4 text-right text-xs text-gray-500">最後更新：{mtrInfo.lastUpdated}</div>
-                </div>
-            );
-        });
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>&copy; 2024 香港資訊儀表板。所有資料以官方公佈為準。</p>
+            <p class="text-xs text-gray-400 mt-2">航之版本一</p>
+        </footer>
+    </div>
 
-        const MemoizedChatWidget = React.memo(({ history, onSendMessage, userInput, setUserInput, isLoading }) => {
-            const chatEndRef = useRef(null);
-
-            useEffect(() => {
-                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, [history]);
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if (userInput.trim() && !isLoading) {
-                    onSendMessage(userInput);
-                }
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const HKO_API = {
+                WEATHER: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc',
+                WARNING: 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=warnsum&lang=tc',
             };
 
-            return (
-                <div className="bg-gray-900/70 backdrop-blur-sm flex flex-col h-full">
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                        {history.map((msg, index) => (
-                            <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-xs md:max-w-md lg:max-w-lg rounded-2xl px-4 py-2 ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-700 text-gray-200 rounded-bl-none'}`}>
-                                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                                </div>
-                            </div>
-                        ))}
-                        {isLoading && (
-                            <div className="flex justify-start">
-                                <div className="bg-gray-700 text-gray-200 rounded-2xl rounded-bl-none px-4 py-2">
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-75"></div>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-150"></div>
-                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse delay-300"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        <div ref={chatEndRef} />
-                    </div>
-                    <form onSubmit={handleSubmit} className="p-3 border-t border-white/10 flex items-center space-x-2">
-                        <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="在這裡輸入問題..." className="flex-1 bg-gray-800 border border-gray-600 rounded-full py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" disabled={isLoading} />
-                        <button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-500 text-white rounded-full p-3 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors duration-200">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                        </button>
-                    </form>
-                </div>
-            );
-        });
-
-
-        // --- 主應用程式 (Main App) ---
-        function App() {
-            // --- State Management ---
-            const { weather, warnings, isLoading: isWeatherLoading } = useWeatherData();
-            const { mtrInfo, isLoading: isMtrLoading } = useMtrData();
-            const { panelRef, panelHeight, handleDragStart } = useResizablePanel(PANEL_CONFIG);
-
-            const [chatHistory, setChatHistory] = useState([
-                { role: 'model', text: '你好！我係你嘅瀏覽器 AI 助理。我可以利用即時嘅天氣同交通資訊，回答你嘅問題。試下問我：「而家天氣點？使唔使帶遮？」' }
-            ]);
-            const [userInput, setUserInput] = useState('');
-            const [isChatLoading, setIsChatLoading] = useState(false);
-
-            // --- Chat Logic ---
-            const handleSendMessage = useCallback(async (prompt) => {
-                if (!prompt.trim()) return;
-
-                const newUserMessage = { role: 'user', text: prompt };
-                const currentChatHistory = [...chatHistory, newUserMessage];
+            // --- 更新頁面時間 ---
+            const updateTime = () => {
+                const now = new Date();
+                const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: 'Asia/Hong_Kong' };
+                document.getElementById('last-updated').textContent = now.toLocaleTimeString('zh-HK', options);
+            };
+            
+            // --- 獲取及渲染天氣資料 ---
+            const fetchWeatherData = async () => {
+                const weatherContentEl = document.getElementById('weather-content');
+                const weatherLoaderEl = document.getElementById('weather-loader');
                 
-                setChatHistory(currentChatHistory);
-                setUserInput('');
-                setIsChatLoading(true);
-
                 try {
-                    // --- 建立完整的提示 (Prompt Engineering) ---
-                    const systemPrompt = "你是一個樂於助人的香港本地助理。請使用繁體中文（香港）和廣東話口語風格回答問題，讓回應感覺親切自然。";
+                    const [weatherRes, warningRes] = await Promise.all([fetch(HKO_API.WEATHER), fetch(HKO_API.WARNING)]);
+                    if (!weatherRes.ok || !warningRes.ok) throw new Error('無法連接天氣伺服器');
                     
-                    // 將歷史紀錄轉換成文字 (只取最近幾則對話以防提示過長)
-                    const historyString = chatHistory.slice(-6) // 只取最近 6 條訊息
-                        .map(msg => `${msg.role === 'user' ? '用戶' : '助理'}: ${msg.text}`)
-                        .join('\n');
+                    const weatherData = await weatherRes.json();
+                    const warningData = await warningRes.json();
 
-                    // 建立即時上下文
-                    let context = "";
-                    const mtrAlerts = mtrInfo.lines?.filter(line => line.status !== '良好')
-                                                  .map(line => `${line.name}: ${line.details || line.status}`)
-                                                  .join('\n');
-                    if (mtrAlerts) {
-                        context += `\n\n--- 實時參考資料：港鐵服務狀況 ---\n${mtrAlerts}`;
-                    }
-                    if(weather) {
-                        context += `\n\n--- 實時參考資料：香港天氣資訊 ---\n溫度：${weather.temperature?.data[0]?.value}°C\n濕度：${weather.humidity?.data[0]?.value}%`;
-                        const warningsText = warnings.map(w => w.name).join(', ');
-                        if (warningsText) {
-                            context += `\n天氣警告：${warningsText}`;
-                        }
+                    const temp = weatherData.temperature.data.find(d => d.place === '香港天文台');
+                    const humidity = weatherData.humidity.data[0];
+                    const icon = weatherData.icon[0];
+                    const warnings = warningData.details || [];
+
+                    // 建立天氣警告 HTML
+                    let warningsHtml = '';
+                    if (warnings.length === 0) {
+                        warningsHtml = `
+                            <div class="bg-green-100 text-green-800 text-sm py-2 px-4 rounded-lg flex items-center">
+                                <i class="fas fa-check-circle mr-2"></i>目前沒有天氣警告
+                            </div>`;
+                    } else {
+                        warningsHtml = warnings.map(warn => `
+                            <div class="bg-yellow-100 text-yellow-800 text-sm py-2 px-4 rounded-lg flex items-center">
+                               <i class="fas fa-triangle-exclamation mr-2"></i>${warn.name}
+                            </div>
+                        `).join('');
                     }
 
-                    // 組合最終提示
-                    const finalPrompt = `${systemPrompt}\n\n--- 對話紀錄 ---\n${historyString}\n${context}\n\n--- 最新問題 ---\n用戶: ${prompt}`;
-                    
-                    const modelResponse = await callBrowserAi(finalPrompt);
-                    setChatHistory(prev => [...prev, { role: 'model', text: modelResponse }]);
+                    // 渲染天氣主體
+                    weatherContentEl.innerHTML = `
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-lg text-gray-600">${temp.place}</p>
+                                <p class="text-6xl font-bold text-gray-900 tracking-tighter">${temp.value}°C</p>
+                                <p class="text-gray-500">濕度: ${humidity.value}%</p>
+                            </div>
+                            <img src="https://www.hko.gov.hk/images/wxicon/pic${icon}.png" alt="天氣圖示" class="w-24 h-24" />
+                        </div>
+                        <div class="space-y-2">${warningsHtml}</div>
+                    `;
 
                 } catch (error) {
-                    console.error("處理 AI 訊息時發生錯誤:", error);
-                    setChatHistory(prev => [...prev, { role: 'model', text: '對唔住，我暫時無法回覆。請稍後再試。' }]);
+                    console.error("獲取天氣失敗:", error);
+                    weatherContentEl.innerHTML = `<p class="text-red-500">無法載入天氣資料，請稍後再試。</p>`;
                 } finally {
-                    setIsChatLoading(false);
+                    weatherLoaderEl.style.display = 'none';
                 }
-            }, [chatHistory, weather, warnings, mtrInfo]);
+            };
+            
+            // --- 獲取及渲染港鐵資料 (使用模擬數據) ---
+            const updateMtrStatus = () => {
+                const mtrContentEl = document.getElementById('mtr-content');
+                const mtrLoaderEl = document.getElementById('mtr-loader');
+                const mtrUpdatedEl = document.getElementById('mtr-last-updated');
 
-            return (
-                <div className="bg-gray-900 text-white h-screen w-full font-sans flex flex-col overflow-hidden">
-                    {/* --- 上方可調整大小的面板 --- */}
-                    <div ref={panelRef} style={{ height: `${panelHeight}px` }} className="flex flex-col overflow-hidden flex-shrink-0">
-                        <div className="p-3 flex-shrink-0">
-                            <MemoizedWeatherWidget weather={weather} warnings={warnings} loading={isWeatherLoading} />
-                        </div>
-                        <div className="flex-1 overflow-y-auto">
-                            <MemoizedMtrWidget
-                                mtrInfo={mtrInfo}
-                                loading={isMtrLoading}
-                            />
-                        </div>
-                    </div>
+                // 模擬 API 數據
+                const mtrInfo = {
+                    lastUpdated: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+                    lines: [
+                        { id: 'TCL', name: '東涌綫', status: '良好', statusColor: 'bg-green-500' },
+                        { id: 'AEL', name: '機場快綫', status: '良好', statusColor: 'bg-green-500' },
+                        { id: 'TML', name: '屯馬綫', status: '服務稍有延誤', statusColor: 'bg-yellow-500', details: '由於屯門站附近有信號故障，行車時間預計需要額外5-8分鐘。' },
+                        { id: 'TWL', name: '荃灣綫', status: '良好', statusColor: 'bg-green-500' },
+                        { id: 'KTL', name: '觀塘綫', status: '良好', statusColor: 'bg-green-500' },
+                        { id: 'ISL', name: '港島綫', status: '良好', statusColor: 'bg-green-500' },
+                    ]
+                };
 
-                    {/* --- 拖曳控制器 --- */}
-                    <div
-                        onMouseDown={handleDragStart}
-                        onTouchStart={handleDragStart}
-                        className="w-full h-3 bg-gray-800 hover:bg-gray-700 active:bg-blue-600 cursor-row-resize flex-shrink-0 flex items-center justify-center transition-colors"
-                        title="拖動以調整大小"
-                    >
-                        <div className="w-10 h-1 bg-gray-600 rounded-full"></div>
-                    </div>
+                const linesHtml = mtrInfo.lines.map(line => `
+                    <li class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <span class="font-semibold text-base">${line.name}</span>
+                        <span class="px-3 py-1 text-sm font-bold text-white rounded-full ${line.statusColor}">${line.status}</span>
+                    </li>
+                `).join('');
 
-                    {/* --- 下方面板 (聊天) --- */}
-                    <div className="flex-1 min-h-0">
-                        <MemoizedChatWidget
-                            history={chatHistory}
-                            onSendMessage={handleSendMessage}
-                            userInput={userInput}
-                            setUserInput={setUserInput}
-                            isLoading={isChatLoading}
-                        />
+                const detailsHtml = mtrInfo.lines.filter(l => l.details).map(line => `
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-3 rounded-r-lg mt-4">
+                        <p class="font-bold">${line.name} 服務更新：</p>
+                        <p class="text-sm">${line.details}</p>
                     </div>
-                </div>
-            );
-        }
-        
-        // --- 將 App 元件渲染到 root div ---
-        const container = document.getElementById('root');
-        const root = ReactDOM.createRoot(container);
-        root.render(<App />);
+                `).join('');
+                
+                mtrContentEl.innerHTML = `
+                    <ul class="space-y-2">${linesHtml}</ul>
+                    <div>${detailsHtml}</div>
+                `;
+                mtrUpdatedEl.textContent = mtrInfo.lastUpdated;
+                mtrLoaderEl.style.display = 'none';
+            };
+
+
+            // --- 初始化及定時更新 ---
+            updateTime();
+            fetchWeatherData();
+            updateMtrStatus();
+
+            setInterval(updateTime, 1000); // 每秒更新時間
+            setInterval(fetchWeatherData, 10 * 60 * 1000); // 每 10 分鐘更新天氣
+            setInterval(updateMtrStatus, 5 * 60 * 1000); // 每 5 分鐘更新港鐵
+        });
     </script>
 </body>
 </html>
+
 
