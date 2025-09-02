@@ -99,14 +99,21 @@
         };
 
 
-        // --- 模擬新聞服務 (Mock News Service) ---
-        const getTodaysNews = () => {
-            const today = new Date().toISOString().split('T')[0];
-            return [
-                { id: 1, headline: '恆生指數高開後回軟 市場關注本周議息結果', content: '港股今日高開後走勢反覆，恆生指數最多升逾百點後轉跌。分析師指出，投資者普遍持觀望態度，等待美國聯儲局本周的議息結果，預計大市短期內將在現水平窄幅上落。科技股及金融股表現個別發展。', date: today, source: '信報財經' },
-                { id: 2, headline: '政府公布新一輪交通規劃 擬建新鐵路連接北部都會區', content: '運輸及物流局今日公布最新的交通發展藍圖，重點之一是研究興建一條新的鐵路項目，以加強北部都會區與市區的連接。政府表示，新鐵路有助紓緩現有東鐵線的壓力，並配合未來北部地區的人口及經濟發展。', date: today, source: '香港電台 RTHK' },
-                { id: 3, headline: '天文台預測本周天氣轉涼 市民需注意氣溫變化', content: '隨著一股東北季候風抵達華南沿岸，香港天文台預測本港未來數日天氣將會顯著轉涼，市區氣溫可能下降至攝氏18度左右。天文台提醒市民，特別是長者及長期病患者，應注意保暖，預防因氣溫急降引致的健康問題。', date: today, source: '香港天文台' },
-            ];
+        // --- 模擬港鐵資訊服務 (Mock MTR Service) ---
+        const getMtrInfo = () => {
+            return {
+                lastUpdated: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                lines: [
+                    { id: 'TCL', name: '東涌綫', status: '良好', statusColor: 'bg-green-500' },
+                    { id: 'AEL', name: '機場快綫', status: '良好', statusColor: 'bg-green-500' },
+                    { id: 'TML', name: '屯馬綫', status: '服務稍有延誤', statusColor: 'bg-yellow-500', details: '由於屯門站附近有信號故障，屯馬綫來往屯門站及烏溪沙站的行車時間預計需要額外5-8分鐘。' },
+                    { id: 'TWL', name: '荃灣綫', status: '良好', statusColor: 'bg-green-500' },
+                    { id: 'KTL', name: '觀塘綫', status: '良好', statusColor: 'bg-green-500' },
+                    { id: 'ISL', name: '港島綫', status: '良好', statusColor: 'bg-green-500' },
+                    { id: 'TKL', name: '將軍澳綫', status: '良好', statusColor: 'bg-green-500' },
+                    { id: 'EAL', name: '東鐵綫', status: '良好', statusColor: 'bg-green-500' },
+                ]
+            };
         };
 
         // --- 自訂掛鉤 (Custom Hooks) ---
@@ -148,24 +155,31 @@
 
             return { weather, warnings, isLoading };
         };
-
+        
         /**
-         * 用於獲取新聞資料的 Hook
+         * 用於獲取港鐵資訊的 Hook
          */
-        const useNewsData = () => {
-            const [articles, setArticles] = useState([]);
+        const useMtrData = () => {
+            const [mtrInfo, setMtrInfo] = useState({ lines: [], lastUpdated: null });
             const [isLoading, setIsLoading] = useState(true);
 
             useEffect(() => {
-                setIsLoading(true);
-                setTimeout(() => {
-                    setArticles(getTodaysNews());
-                    setIsLoading(false);
-                }, 800); // 模擬網絡延遲
+                const fetchData = () => {
+                    setIsLoading(true);
+                    // 模擬網絡延遲
+                    setTimeout(() => {
+                        setMtrInfo(getMtrInfo());
+                        setIsLoading(false);
+                    }, 600);
+                };
+                fetchData();
+                const intervalId = setInterval(fetchData, 5 * 60 * 1000); // 每 5 分鐘更新一次
+                return () => clearInterval(intervalId);
             }, []);
 
-            return { articles, isLoading };
+            return { mtrInfo, isLoading };
         };
+
 
         /**
          * 用於處理可調整大小面板邏輯的 Hook
@@ -262,52 +276,45 @@
             );
         });
 
-        const MemoizedNewsWidget = React.memo(({ articles, onSelect, selectedArticle, onBack, loading }) => {
+        const MemoizedMtrWidget = React.memo(({ mtrInfo, loading }) => {
             if (loading) return (
                 <div className="space-y-3 p-4">
-                    {[...Array(3)].map((_, i) => (
-                        <div key={i} className="bg-gray-800/50 p-4 rounded-lg animate-pulse">
-                            <div className="h-5 bg-gray-700 rounded w-full mb-2"></div>
-                            <div className="h-3 bg-gray-700 rounded w-3/4"></div>
+                    {[...Array(5)].map((_, i) => (
+                        <div key={i} className="bg-gray-800/50 p-4 rounded-lg animate-pulse flex justify-between items-center">
+                            <div className="h-5 bg-gray-700 rounded w-1/3"></div>
+                            <div className="h-5 bg-gray-700 rounded-full w-1/4"></div>
                         </div>
                     ))}
                 </div>
             );
 
-            if (selectedArticle) return (
-                <div className="p-4 text-white flex-1 overflow-y-auto">
-                     <button onClick={onBack} className="mb-4 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200 flex items-center">
-                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m15 18-6-6 6-6"></path></svg>
-                        返回列表
-                    </button>
-                    <div className="flex items-center justify-between mb-3 text-sm text-gray-400 border-b border-gray-700 pb-2">
-                        <span>來源：{selectedArticle.source}</span>
-                        <span>日期：{selectedArticle.date}</span>
-                    </div>
-                    <h2 className="text-2xl font-bold mb-3">{selectedArticle.headline}</h2>
-                    <p className="text-gray-300 whitespace-pre-wrap leading-relaxed">{selectedArticle.content}</p>
-                </div>
-            );
-
             return (
-                <div className="text-white">
-                    <h2 className="text-xl font-bold p-4 pb-2">今日熱門新聞</h2>
-                    <ul className="space-y-1 px-2 pb-2">
-                        {articles.map((article) => (
-                            <li key={article.id} onClick={() => onSelect(article)} className="block bg-gray-800/50 hover:bg-gray-700/80 p-3 rounded-lg cursor-pointer transition-all duration-200">
-                                <h3 className="font-semibold text-base mb-1">{article.headline}</h3>
-                                <div className="flex items-center justify-between text-xs text-gray-400">
-                                    <span>{article.source}</span>
-                                    <span>{article.date}</span>
-                                </div>
+                 <div className="text-white">
+                    <h2 className="text-xl font-bold p-4 pb-2">港鐵最新行車資訊</h2>
+                    <ul className="space-y-2 px-4 pb-2">
+                        {mtrInfo.lines.map((line) => (
+                            <li key={line.id} className="flex items-center justify-between bg-gray-800/50 p-3 rounded-lg">
+                                <span className="font-semibold text-base">{line.name}</span>
+                                <span className={`px-3 py-1 text-sm font-bold text-white rounded-full ${line.statusColor}`}>
+                                    {line.status}
+                                </span>
                             </li>
                         ))}
                     </ul>
+                    <div className="px-4 py-2 space-y-2">
+                        {mtrInfo.lines.filter(l => l.details).map(line => (
+                            <div key={`${line.id}-details`} className="bg-yellow-500/10 border-l-4 border-yellow-500 text-yellow-300 p-3 rounded-r-lg">
+                                <p className="font-bold">{line.name} 服務更新：</p>
+                                <p className="text-sm">{line.details}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-2 px-4 text-right text-xs text-gray-500">最後更新：{mtrInfo.lastUpdated}</div>
                 </div>
             );
         });
 
-        const MemoizedChatWidget = React.memo(({ history, onSendMessage, userInput, setUserInput, isLoading, selectedArticle, weather }) => {
+        const MemoizedChatWidget = React.memo(({ history, onSendMessage, userInput, setUserInput, isLoading }) => {
             const chatEndRef = useRef(null);
 
             useEffect(() => {
@@ -317,10 +324,7 @@
             const handleSubmit = (e) => {
                 e.preventDefault();
                 if (userInput.trim() && !isLoading) {
-                    let context = "";
-                    if(selectedArticle) context += `關於這則新聞（來源：${selectedArticle.source}）:\n標題：${selectedArticle.headline}\n內容：${selectedArticle.content}\n\n`;
-                    if(weather) context += `目前的香港天氣資訊：\n溫度：${weather.temperature?.data[0]?.value}°C\n濕度：${weather.humidity?.data[0]?.value}%\n\n`;
-                    onSendMessage(context ? `${context}我的問題是：「${userInput}」` : userInput);
+                    onSendMessage(userInput);
                 }
             };
 
@@ -362,12 +366,11 @@
         function App() {
             // --- State Management ---
             const { weather, warnings, isLoading: isWeatherLoading } = useWeatherData();
-            const { articles, isLoading: isNewsLoading } = useNewsData();
+            const { mtrInfo, isLoading: isMtrLoading } = useMtrData();
             const { panelRef, panelHeight, handleDragStart } = useResizablePanel(PANEL_CONFIG);
 
-            const [selectedArticle, setSelectedArticle] = useState(null);
             const [chatHistory, setChatHistory] = useState([
-                { role: 'model', text: '你好！我可以回答關於天氣、新聞或者任何你想知道嘅問題。' }
+                { role: 'model', text: '你好！我可以回答關於天氣、港鐵交通狀況或者任何你想知道嘅問題。' }
             ]);
             const [userInput, setUserInput] = useState('');
             const [isChatLoading, setIsChatLoading] = useState(false);
@@ -384,7 +387,24 @@
                 setIsChatLoading(true);
 
                 try {
-                    const modelResponse = await callGeminiApi(chatHistory, prompt);
+                    let context = "";
+                    
+                    // 添加港鐵服務警報作為上下文
+                    const mtrAlerts = mtrInfo.lines?.filter(line => line.status !== '良好')
+                                                  .map(line => `${line.name}: ${line.details || line.status}`)
+                                                  .join('\n');
+                    if (mtrAlerts) {
+                        context += `關於目前的港鐵服務狀況：\n${mtrAlerts}\n\n`;
+                    }
+
+                    // 添加天氣資訊作為上下文
+                    if(weather) {
+                        context += `目前的香港天氣資訊：\n溫度：${weather.temperature?.data[0]?.value}°C\n濕度：${weather.humidity?.data[0]?.value}%\n\n`;
+                    }
+                    
+                    const finalPrompt = context ? `${context}我的問題是：「${prompt}」` : prompt;
+
+                    const modelResponse = await callGeminiApi(chatHistory, finalPrompt);
                     setChatHistory(prev => [...prev, { role: 'model', text: modelResponse }]);
                 } catch (error) {
                     console.error("與 Gemini API 通訊失敗:", error);
@@ -392,7 +412,7 @@
                 } finally {
                     setIsChatLoading(false);
                 }
-            }, [chatHistory, userInput]);
+            }, [chatHistory, userInput, weather, mtrInfo]);
 
             return (
                 <div className="bg-gray-900 text-white h-screen w-full font-sans flex flex-col overflow-hidden">
@@ -402,12 +422,9 @@
                             <MemoizedWeatherWidget weather={weather} warnings={warnings} loading={isWeatherLoading} />
                         </div>
                         <div className="flex-1 overflow-y-auto">
-                            <MemoizedNewsWidget
-                                articles={articles}
-                                selectedArticle={selectedArticle}
-                                onSelect={setSelectedArticle}
-                                onBack={() => setSelectedArticle(null)}
-                                loading={isNewsLoading}
+                            <MemoizedMtrWidget
+                                mtrInfo={mtrInfo}
+                                loading={isMtrLoading}
                             />
                         </div>
                     </div>
@@ -430,8 +447,6 @@
                             userInput={userInput}
                             setUserInput={setUserInput}
                             isLoading={isChatLoading}
-                            selectedArticle={selectedArticle}
-                            weather={weather}
                         />
                     </div>
                 </div>
@@ -445,5 +460,4 @@
     </script>
 </body>
 </html>
-
 
