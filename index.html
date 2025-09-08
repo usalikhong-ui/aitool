@@ -46,7 +46,6 @@
   .badge{font-size:12px;padding:2px 8px;border-radius:999px;background:#22305f;color:#aecdff}
   .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .small{font-size:12px;color:var(--muted)}
-  .profile-input{background:var(--bg);border:1px solid #334074;color:var(--text);padding:8px;border-radius:8px;width:100%;box-sizing:border-box;}
   /* 書本閱讀器 */
   #bookReader{position:fixed;inset:10px;background:var(--panel);border-radius:16px;z-index:20;padding:20px;display:none;flex-direction:column;border:1px solid #2a335f;}
   #bookReader.open{display:flex;}
@@ -58,7 +57,7 @@
   /* 小螢幕優化 */
   @media (max-width:520px){
     .bottombar{gap:8px; justify-content: center;}
-    button{padding:8px; font-size: 13px;}
+    button{padding:10px 10px; font-size: 14px;}
     .msg{max-height:66px;min-width:100%; order: 1;}
   }
 </style>
@@ -91,10 +90,10 @@
   <div class="bottombar">
     <button id="answerBtn" class="btn-ok" data-lang="btn_answer">今天答案</button>
     <button id="drawEquipBtn" class="btn-warn" data-lang="btn_draw_equip">抽裝備</button>
+    <button id="nameBtn" class="btn-secondary" data-lang="btn_name">名字</button>
     <button id="petBtn" class="btn-secondary" data-lang="btn_pet">寵物</button>
     <button id="backpackBtn" class="btn-secondary" data-lang="btn_backpack">背包</button>
     <button id="gearBtn" class="btn-secondary" data-lang="btn_gear">裝備</button>
-    <button id="profileBtn" class="btn-secondary" data-lang="btn_profile">名字</button>
     <div class="msg" id="msgBox"><div class="muted" data-lang="hint_welcome">探索你的小空間吧！</div></div>
   </div>
 </div>
@@ -102,7 +101,7 @@
 <!-- 面板 -->
 <div class="sheet" id="gearSheet" aria-hidden="true">
   <div class="row" style="justify-content:space-between;margin-bottom:8px">
-    <div><b data-lang="gear_title">裝備</b> <span class="small" data-lang="gear_subtitle"></span></div>
+    <div><b data-lang="gear_title">裝備</b> <span class="small" data-lang="gear_subtitle">（點按切換穿著）</span></div>
     <button class="close-btn" data-panel="gearSheet" data-lang="btn_close">關閉</button>
   </div>
   <div class="grid" id="gearGrid"></div>
@@ -110,7 +109,7 @@
 
 <div class="sheet" id="petSheet" aria-hidden="true">
   <div class="row" style="justify-content:space-between;margin-bottom:8px">
-    <div><b data-lang="pet_title">寵物</b> <span class="small" data-lang="pet_subtitle"></span></div>
+    <div><b data-lang="pet_title">寵物</b> <span class="small" data-lang="pet_subtitle">（點按召喚/隱藏）</span></div>
     <button class="close-btn" data-panel="petSheet" data-lang="btn_close">關閉</button>
   </div>
   <div class="grid" id="petGrid"></div>
@@ -118,20 +117,28 @@
 
 <div class="sheet" id="backpackSheet" aria-hidden="true">
   <div class="row" style="justify-content:space-between;margin-bottom:8px">
-    <div><b data-lang="backpack_title">背包</b> <span class="small" data-lang="backpack_subtitle"></span></div>
+    <div><b data-lang="backpack_title">背包</b> <span class="small" data-lang="backpack_subtitle">（點按閱讀已購買的書）</span></div>
     <button class="close-btn" data-panel="backpackSheet" data-lang="btn_close">關閉</button>
   </div>
   <div class="grid" id="backpackGrid"></div>
 </div>
 
-<div class="sheet" id="profileSheet" aria-hidden="true">
+<div class="sheet" id="shopSheet" aria-hidden="true">
   <div class="row" style="justify-content:space-between;margin-bottom:8px">
-    <div><b data-lang="profile_title">設定名字</b></div>
-    <button class="close-btn" data-panel="profileSheet" data-lang="btn_close">關閉</button>
+    <div><b data-lang="shop_title">書店</b> <span class="small" data-lang="shop_subtitle">（與我購買智慧吧！）</span></div>
+    <button class="close-btn" data-panel="shopSheet" data-lang="btn_close">關閉</button>
   </div>
-  <div style="display:flex; gap: 8px;">
-      <input type="text" id="nameInput" class="profile-input" maxlength="10">
-      <button id="saveNameBtn" data-lang="btn_save">儲存</button>
+  <div class="grid" id="shopGrid"></div>
+</div>
+
+<div class="sheet" id="nameSheet" aria-hidden="true">
+  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+    <div><b data-lang="name_title">更改名字</b></div>
+    <button class="close-btn" data-panel="nameSheet" data-lang="btn_close">關閉</button>
+  </div>
+  <div class="row" style="gap: 8px;">
+    <input type="text" id="nameInput" placeholder="輸入你的名字" style="flex:1; padding: 8px; border-radius: 8px; border: 1px solid #334074; background: var(--bg); color: var(--text);">
+    <button id="saveNameBtn" data-lang="btn_save">儲存</button>
   </div>
 </div>
 
@@ -147,6 +154,7 @@
    <button id="closeBookBtn" data-lang="btn_close" style="margin-top: 10px; width:100%;">關閉</button>
 </div>
 
+<script src="books.js"></script>
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   /* =============================
@@ -166,15 +174,21 @@ window.addEventListener('DOMContentLoaded', () => {
   const LANG_STRINGS = {
     'zh-TW': {
       ui_temp: '氣溫', ui_daily_reset: '每日重置', ui_lang: '語言', lang_symbol: '繁',
-      btn_answer: '今天答案', btn_answer_done: '已獲答案', btn_draw_equip: '抽裝備', btn_draw_done: '今日已抽', btn_gear: '裝備', btn_close: '關閉', btn_pet: '寵物', btn_backpack: '背包', btn_profile: '名字', btn_save: '儲存', btn_prev_page: '上一頁', btn_next_page: '下一頁', btn_buy: '購買', btn_read: '閱讀',
+      btn_answer: '今天答案', btn_answer_done: '已獲答案', btn_draw_equip: '抽裝備', btn_draw_done: '今日已抽', btn_gear: '裝備', btn_close: '關閉', btn_pet: '寵物', btn_backpack: '背包', btn_prev_page: '上一頁', btn_next_page: '下一頁', btn_buy: '購買', btn_read: '閱讀', btn_name: '名字', btn_save: '儲存',
       gear_title: '裝備', gear_subtitle: '（點按切換穿著）', btn_equip: '穿上', btn_unequip: '脫下',
       pet_title: '寵物', pet_subtitle: '（點按召喚/隱藏）', btn_summon: '召喚', btn_unsummon: '隱藏',
-      backpack_title: '背包', backpack_subtitle: '（點按使用物品）',
-      profile_title: '設定名字',
+      backpack_title: '背包', backpack_subtitle: '（點按閱讀已購買的書）', backpack_empty: '你的背包空空如也。',
+      shop_title: '書店', shop_subtitle: '（與我購買智慧吧！）', btn_owned: '已擁有',
+      name_title: '更改名字',
       type_head: '頭部', type_eyes: '眼部', type_body: '身體', type_legs: '腿部',
-      hint_welcome: '探索你的小空間吧！', hint_sit: '你坐在桌邊... 按任意方向鍵離開。', hint_sleep: '你躺在床上休息... 按任意方向鍵起床。', hint_read: '你正在閱讀... 按任意方向鍵停止。',
-      hint_new_item: '恭喜你抽到新裝備：<b>{itemName}</b>！', hint_all_items: '恭喜！你已收集所有裝備！',
-      hint_buy_book: '你花了 {price} 金幣買下了《{bookName}》。', hint_no_gold: '金幣不足！', hint_pet_found_gold: '你的寵物找到了一枚金幣！', hint_name_saved: '名字已儲存！',
+      hint_welcome: '探索你的小空間吧！',
+      hint_sit: '你坐在桌邊... 按任意方向鍵離開。',
+      hint_sleep: '你躺在床上休息... 按任意方向鍵起床。',
+      hint_read: '你正在閱讀... 按任意方向鍵停止。',
+      hint_new_item: '恭喜你抽到新裝備：<b>{itemName}</b>！',
+      hint_all_items: '恭喜！你已收集所有裝備！',
+      hint_buy_book: '你花了 {price} 金幣買下了《{bookName}》。',
+      hint_no_gold: '金幣不足！',
       answer_title: '今日答案',
       answer_A: ["你已經走在路上","把目光放遠一點","慢慢來也沒關係","今天請溫柔對自己","先完成一件小事","把心安放好","勇敢，但不逞強","相信步伐的力量","把失敗當作回饋","試著微笑一下","接納不確定","允許自己休息","先呼吸，再出發","別忘了補水","把情緒說出來","堅持你認同的節奏","去散步五分鐘","寫下你感謝的三件事","你值得被善待","今天的你，已足夠好"],
       answer_B: ["明天會更清晰","答案會在路上出現","努力不一定立刻有效","值得的事都需要時間","放下完美主義","把焦點放在可行一步","先做能做的","你可以求助","用好奇替代恐懼","把標準調整到可達","請相信自己的恢復力","把注意力回到當下","把目光從結果移開","讓身體告訴你界線","把忙碌變成專注","練習說不"],
@@ -183,15 +197,21 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     'zh-CN': {
       ui_temp: '气温', ui_daily_reset: '每日重置', ui_lang: '语言', lang_symbol: '简',
-      btn_answer: '今天答案', btn_answer_done: '已获答案', btn_draw_equip: '抽装备', btn_draw_done: '今日已抽', btn_gear: '装备', btn_close: '关闭', btn_pet: '宠物', btn_backpack: '背包', btn_profile: '名字', btn_save: '储存', btn_prev_page: '上一页', btn_next_page: '下一页', btn_buy: '购买', btn_read: '阅读',
+      btn_answer: '今天答案', btn_answer_done: '已获答案', btn_draw_equip: '抽装备', btn_draw_done: '今日已抽', btn_gear: '装备', btn_close: '关闭', btn_pet: '宠物', btn_backpack: '背包', btn_prev_page: '上一页', btn_next_page: '下一页', btn_buy: '购买', btn_read: '阅读', btn_name: '名字', btn_save: '保存',
       gear_title: '装备', gear_subtitle: '（点击切换穿着）', btn_equip: '穿上', btn_unequip: '脱下',
       pet_title: '宠物', pet_subtitle: '（点击召唤/隐藏）', btn_summon: '召唤', btn_unsummon: '隐藏',
-      backpack_title: '背包', backpack_subtitle: '（点击使用物品）',
-      profile_title: '设定名字',
+      backpack_title: '背包', backpack_subtitle: '（点击阅读已购买的书）', backpack_empty: '你的背包空空如也。',
+      shop_title: '书店', shop_subtitle: '（与我购买智慧吧！）', btn_owned: '已拥有',
+      name_title: '更改名字',
       type_head: '头部', type_eyes: '眼部', type_body: '身体', type_legs: '腿部',
-      hint_welcome: '探索你的小空间吧！', hint_sit: '你坐在桌边... 按任意方向键离开。', hint_sleep: '你躺在床上休息... 按任意方向键起床。', hint_read: '你正在阅读... 按任意方向键停止。',
-      hint_new_item: '恭喜你抽到新装备：<b>{itemName}</b>！', hint_all_items: '恭喜！你已收集所有装备！',
-      hint_buy_book: '你花了 {price} 金币买下了《{bookName}》。', hint_no_gold: '金币不足！', hint_pet_found_gold: '你的宠物找到了一枚金币！', hint_name_saved: '名字已保存！',
+      hint_welcome: '探索你的小空间吧！',
+      hint_sit: '你坐在桌边... 按任意方向键离开。',
+      hint_sleep: '你躺在床上休息... 按任意方向键起床。',
+      hint_read: '你正在阅读... 按任意方向键停止。',
+      hint_new_item: '恭喜你抽到新装备：<b>{itemName}</b>！',
+      hint_all_items: '恭喜！你已收集所有装备！',
+      hint_buy_book: '你花了 {price} 金币买下了《{bookName}》。',
+      hint_no_gold: '金币不足！',
       answer_title: '今日答案',
       answer_A: ["你已经走在路上","把目光放远一点","慢慢来也没关系","今天请温柔对自己","先完成一件小事","把心安放好","勇敢，但不逞强","相信步伐的力量","把失败当作回馈","试着微笑一下","接纳不确定","允许自己休息","先呼吸，再出发","别忘了补水","把情绪说出来","坚持你认同的节奏","去散步五分钟","写下你感谢的三件事","你值得被善待","今天的你，已足够好"],
       answer_B: ["明天会更清晰","答案会在路上出现","努力不一定立刻有效","值得的事都需要时间","放下完美主义","把焦点放在可行一步","先做能做的","你可以求助","用好奇替代恐惧","把标准调整到可达","请相信自己的恢复力","把注意力回到当下","把目光从结果移开","让身体告诉你界线","把忙碌变成专注","练习说不"],
@@ -200,15 +220,21 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     'en': {
       ui_temp: 'Temp', ui_daily_reset: 'Daily Reset', ui_lang: 'Language', lang_symbol: 'En',
-      btn_answer: "Today's Answer", btn_answer_done: "Answered", btn_draw_equip: 'Draw Gear', btn_draw_done: 'Drawn Today', btn_gear: 'Gear', btn_close: 'Close', btn_pet: 'Pet', btn_backpack: 'Backpack', btn_profile: 'Name', btn_save: 'Save', btn_prev_page: 'Prev', btn_next_page: 'Next', btn_buy: 'Buy', btn_read: 'Read',
+      btn_answer: "Today's Answer", btn_answer_done: "Answered", btn_draw_equip: 'Draw Gear', btn_draw_done: 'Drawn Today', btn_gear: 'Gear', btn_close: 'Close', btn_pet: 'Pet', btn_backpack: 'Backpack', btn_prev_page: 'Prev', btn_next_page: 'Next', btn_buy: 'Buy', btn_read: 'Read', btn_name: 'Name', btn_save: 'Save',
       gear_title: 'Gear', gear_subtitle: '(Click to toggle)', btn_equip: 'Equip', btn_unequip: 'Unequip',
       pet_title: 'Pet', pet_subtitle: '(Click to summon/hide)', btn_summon: 'Summon', btn_unsummon: 'Hide',
-      backpack_title: 'Backpack', backpack_subtitle: '(Click to use item)',
-      profile_title: 'Set Name',
+      backpack_title: 'Backpack', backpack_subtitle: '(Click to read purchased books)', backpack_empty: 'Your backpack is empty.',
+      shop_title: 'Bookstore', shop_subtitle: '(Buy some wisdom from me!)', btn_owned: 'Owned',
+      name_title: 'Change Name',
       type_head: 'Head', type_eyes: 'Eyes', type_body: 'Body', type_legs: 'Legs',
-      hint_welcome: 'Explore your little space!', hint_sit: 'You are sitting... Press any arrow key to leave.', hint_sleep: 'You are resting... Press any arrow key to get up.', hint_read: 'You are reading... Press any arrow key to stop.',
-      hint_new_item: 'You got a new item: <b>{itemName}</b>!', hint_all_items: 'Congratulations! You have collected all items!',
-      hint_buy_book: 'You spent {price} gold on "{bookName}".', hint_no_gold: 'Not enough gold!', hint_pet_found_gold: 'Your pet found a coin!', hint_name_saved: 'Name saved!',
+      hint_welcome: 'Explore your little space!',
+      hint_sit: 'You are sitting... Press any arrow key to leave.',
+      hint_sleep: 'You are resting... Press any arrow key to get up.',
+      hint_read: 'You are reading... Press any arrow key to stop.',
+      hint_new_item: 'You got a new item: <b>{itemName}</b>!',
+      hint_all_items: 'Congratulations! You have collected all items!',
+      hint_buy_book: 'You spent {price} gold on "{bookName}".',
+      hint_no_gold: 'Not enough gold!',
       answer_title: "Today's Answer",
       answer_A: ["You are on your way.", "Look at the bigger picture.", "It's okay to go slow.", "Be gentle with yourself today.", "Finish one small thing first.", "Settle your heart.", "Be brave, but not reckless.", "Trust the power of your steps.", "Treat failure as feedback.", "Try to smile.", "Embrace uncertainty.", "Allow yourself to rest.", "Breathe first, then set off.", "Don't forget to hydrate.", "Speak your emotions.", "Stick to a rhythm you approve of.", "Go for a five-minute walk.", "Write down three things you are grateful for.", "You deserve to be treated well.", "You are good enough for today."],
       answer_B: ["Tomorrow will be clearer.", "The answer will appear on the way.", "Hard work doesn't always pay off immediately.", "Things worth doing take time.", "Let go of perfectionism.", "Focus on the next feasible step.", "Do what you can first.", "You can ask for help.", "Replace fear with curiosity.", "Adjust your standards to be achievable.", "Trust in your resilience.", "Bring your attention to the present.", "Shift your focus away from the outcome.", "Let your body tell you your limits.", "Turn busyness into focus.", "Practice saying no."],
@@ -217,15 +243,21 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     'ja': {
       ui_temp: '気温', ui_daily_reset: '毎日リセット', ui_lang: '言語', lang_symbol: '日',
-      btn_answer: '今日の答え', btn_answer_done: '回答済み', btn_draw_equip: '装備ガチャ', btn_draw_done: '本日抽選済み', btn_gear: '装備', btn_close: '閉じる', btn_pet: 'ペット', btn_backpack: 'バッグ', btn_profile: '名前', btn_save: '保存', btn_prev_page: '前へ', btn_next_page: '次へ', btn_buy: '購入', btn_read: '読む',
+      btn_answer: '今日の答え', btn_answer_done: '回答済み', btn_draw_equip: '装備ガチャ', btn_draw_done: '本日抽選済み', btn_gear: '装備', btn_close: '閉じる', btn_pet: 'ペット', btn_backpack: 'バッグ', btn_prev_page: '前へ', btn_next_page: '次へ', btn_buy: '購入', btn_read: '読む', btn_name: '名前', btn_save: '保存',
       gear_title: '装備', gear_subtitle: '（クリックで着脱）', btn_equip: '装備', btn_unequip: '外す',
       pet_title: 'ペット', pet_subtitle: '（クリックで召喚/隠す）', btn_summon: '召喚', btn_unsummon: '隠す',
-      backpack_title: 'バッグ', backpack_subtitle: '（クリックでアイテムを使用）',
-      profile_title: '名前を設定',
+      backpack_title: 'バッグ', backpack_subtitle: '（購入した本を読む）', backpack_empty: 'バッグは空です。',
+      shop_title: '書店', shop_subtitle: '（私から知恵を買いませんか？）', btn_owned: '所有済み',
+      name_title: '名前を変更',
       type_head: '頭', type_eyes: '目', type_body: '体', type_legs: '脚',
-      hint_welcome: 'あなたの小さな空間を探検しよう！', hint_sit: 'テーブルに座っています... 矢印キーで離れます。', hint_sleep: 'ベッドで休んでいます... 矢印キーで起きます。', hint_read: '本を読んでいます... 矢印キーで止めます。',
-      hint_new_item: '新しい装備を手に入れた：<b>{itemName}</b>！', hint_all_items: 'おめでとう！すべての装備を集めました！',
-      hint_buy_book: '{price}ゴールドで「{bookName}」を購入しました。', hint_no_gold: 'ゴールドが足りません！', hint_pet_found_gold: 'ペットがコインを見つけました！', hint_name_saved: '名前が保存されました！',
+      hint_welcome: 'あなたの小さな空間を探検しよう！',
+      hint_sit: 'テーブルに座っています... 矢印キーで離れます。',
+      hint_sleep: 'ベッドで休んでいます... 矢印キーで起きます。',
+      hint_read: '本を読んでいます... 矢印キーで止めます。',
+      hint_new_item: '新しい装備を手に入れた：<b>{itemName}</b>！',
+      hint_all_items: 'おめでとう！すべての装備を集めました！',
+      hint_buy_book: '{price}ゴールドで「{bookName}」を購入しました。',
+      hint_no_gold: 'ゴールドが足りません！',
       answer_title: '今日の答え',
       answer_A: ["あなたはもう道を進んでいます。", "視野を広く持ちましょう。", "ゆっくりで大丈夫です。", "今日は自分に優しく。", "まず小さなことを一つ終わらせて。", "心を落ち着かせて。", "勇敢に、でも無謀にならず。", "一歩の力を信じて。", "失敗をフィードバックと捉えて。", "少し微笑んでみて。", "不確かさを受け入れて。", "休むことを自分に許して。", "まず深呼吸、それから出発。", "水分補給を忘れずに。", "感情を言葉にして。", "自分が納得できるリズムを保って。", "5分間散歩に行きましょう。", "感謝することを3つ書き出して。", "あなたは優しくされる価値があります。", "今日のあなたは、それで十分です。"],
       answer_B: ["明日はもっとはっきりするでしょう。", "答えは道中で見つかります。", "努力がすぐに報われるとは限りません。", "価値あることには時間が必要です。", "完璧主義を手放して。", "実行可能な一歩に焦点を当てて。", "できることから始めましょう。", "助けを求めてもいいのです。", "恐れを好奇心に置き換えて。", "基準を達成可能なものに調整して。", "自分の回復力を信じて。", "「今」に注意を向けて。", "結果から目を離して。", "体と心に境界線を教えてもらいましょう。", "忙しさを集中力に変えて。", "「いいえ」と言う練習をしましょう。"],
@@ -237,6 +269,7 @@ window.addEventListener('DOMContentLoaded', () => {
   let currentLang = 'zh-TW';
 
   function t(key, params = {}) {
+      if (!key) return '';
       const langPack = LANG_STRINGS[currentLang] || LANG_STRINGS['zh-TW'];
       let str = langPack[key] || key;
       for (const p in params) {
@@ -244,10 +277,13 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       return str;
   }
-  
+ 
   function updateUIText() {
     document.querySelectorAll('[data-lang]').forEach(el => {
-      el.textContent = t(el.dataset.lang);
+      const key = el.dataset.lang;
+      if (! ( (el.id === 'answerBtn' || el.id === 'drawEquipBtn') && el.disabled) ) {
+         el.textContent = t(key);
+      }
     });
     $('#langDisplay').textContent = t('lang_symbol');
     updateDailyStatus();
@@ -265,42 +301,40 @@ window.addEventListener('DOMContentLoaded', () => {
      遊戲資料
   ============================= */
   const W = map.width, H = map.height;
-  
+ 
   const SCENES = {
       room: {
-          BED: { x: 20, y: 30, w: 32, h: 20 },
-          TABLE: { x: W - 60, y: 80, w: 40, h: 16 },
-          CHAIR: { x: W - 52, y: 100, w: 10, h: 10 },
-          DOOR: { x: W/2 - 10, y: 0, w: 20, h: 10 }
+          BED: { id: 'BED', x: 20, y: 30, w: 32, h: 20 },
+          TABLE: { id: 'TABLE', x: W - 60, y: 80, w: 40, h: 16 },
+          CHAIR: { id: 'CHAIR', x: W - 52, y: 100, w: 10, h: 10 },
+          DOOR: { id: 'DOOR_TO_LIB', x: W/2 - 10, y: 0, w: 20, h: 10 }
       },
       library: {
-          LIBRARIAN: { x: 40, y: 50, w: 8, h: 16 },
-          DOOR: { x: W/2 - 10, y: H - 10, w: 20, h: 10 },
-          BOOKSHELVES: [
-              { x: 100, y: 30, w: 20, h: 80 },
-              { x: 140, y: 30, w: 20, h: 80 },
-              { x: 180, y: 30, w: 20, h: 80 },
-          ]
+          LIBRARIAN: { id: 'LIBRARIAN', x: 40, y: 50, w: 8, h: 16 },
+          DOOR: { id: 'DOOR_TO_ROOM', x: W/2 - 10, y: H - 10, w: 20, h: 10 },
+          BOOKSHELF: { id: 'BOOKSHELF', x: 130, y: 20, w: 80, h: 110 }
       }
   };
 
   const player = {
-    name: "玩家",
     x: W/2, y: H/2, speed: 1.2, dir: 'down', state: 'idle', scene: 'room',
+    name: '玩家',
+    lastInteractionObject: null,
+    sceneTransitionCooldown: 0,
     equip:{ head: null, eyes: null, body: null, legs: null },
     unlockedItems: new Set(['sunglasses', 'suit', 'cap_white', 'shorts_red']),
     inventory: new Set(), 
     gold: 10,
-    movedSinceLastSave: false,
-    interactingWith: null,
+    movedSinceLastSave: false
   };
 
   const pet = {
       x: W / 2 + 20, y: H / 2, dir: 'left', state: 'wandering',
       state_timer: 120, visible: false,
-      love_timer: 0
+      love_timer: 0,
+      gold_find_timer: Math.random() * 1200 + 1200,
   };
-  
+ 
   const ALL_EQUIPMENT = [
     {id:'sunglasses', nameKey:'item_sunglasses_name', descKey:'item_sunglasses_desc', type:'eyes'},
     {id:'suit', nameKey:'item_suit_name', descKey:'item_suit_desc', type:'body'},
@@ -321,19 +355,108 @@ window.addEventListener('DOMContentLoaded', () => {
     {id:'boots_rocket', nameKey:'item_boots_rocket_name', descKey:'item_boots_rocket_desc', type:'legs'},
   ];
   const ALL_PETS = [{id: 'cat_blackwhite', nameKey: 'pet_cat_bw_name'}];
-  const ALL_BOOKS = [
-    {id: 'book_compass', nameKey: 'book_compass_name', price: 3, contentKey: 'book_compass_content'},
-    {id: 'book_garden', nameKey: 'book_garden_name', price: 3, contentKey: 'book_garden_content'}
-  ];
-  
-  Object.assign(LANG_STRINGS['zh-TW'], {
-      item_cape_starlight_name: '星光斗篷', item_cape_starlight_desc: '閃爍著宇宙的光芒', item_crown_royal_name: '皇家王冠', item_crown_royal_desc: '尊貴的象徵', item_boots_rocket_name: '火箭靴', item_boots_rocket_desc: '感覺能飛起來！',
-      pet_cat_bw_name: '黑白貓', book_compass_name: '星辰追逐者的羅盤', book_garden_name: '寧靜的心靈花園',
-      book_compass_content: `第一章：失落的星光\n艾拉的村莊坐落在靜語森林的邊緣，那裡的天空夜晚總是比別處更黑，星星也因此顯得格外明亮。艾拉從小就對星星著迷，她的祖母告訴她，每一顆星星都有自己的故事，而墜落的星星，則會帶來改變命運的力量。\n一個風暴肆虐的夜晚，一道前所未有的強光劃破天際，伴隨著雷鳴般的巨響，一顆星星墜落在森林深處。第二天，村莊恢復了平靜，但艾拉發現，天空中的「守護者之星」消失了。與此同時，她在家中閣樓的一個舊木箱裡，找到了一枚古老的黃銅羅盤。這羅盤的指針並不指向北方，而是微微顫動，指向森林深處，彷彿在回應那顆失落的星光。\n\n第二章：羅盤的指引\n艾拉握著羅盤，決心找回村莊的守護星。她告別家人，獨自踏入了充滿未知與傳說的靜語森林。森林裡，光線昏暗，古木參天，羅盤的指針是她唯一的嚮導。\n旅途中，她遇到了一隻會說話的狐狸，名叫芬尼克。芬尼克警告她，墜星之地被一個古老的陰影守護著，它會吞噬所有靠近的光芒。但看到艾拉堅定的眼神，芬尼克決定與她同行。「也許，」牠說，「我這輩子總得做一件瘋狂而有意義的事。」\n\n第三章：陰影的迷宮\n越靠近森林中心，四周就越是寂靜，連鳥鳴都消失了。空氣中瀰漫著一股寒意，陰影在樹木間扭曲成怪異的形狀。艾拉和芬尼克發現，他們陷入了一個由陰影構成的迷宮，羅盤的指針開始瘋狂旋轉。\n在絕望之際，艾拉想起了祖母的話：「當你迷失時，傾聽內心的光。」她閉上眼睛，不再依賴羅盤，而是感受內心那股尋找星光的渴望。當她再次睜開眼，她看到迷宮的牆壁上，有一些微弱的苔蘚在發光，它們連接成一條幾乎看不見的小徑。那是生命在陰影中開闢的道路。\n\n第四章：星核之心\n跟隨發光的小徑，他們終於走出了迷宮，來到一片空地。空地的中央，一個巨大的坑洞裡，躺著那顆墜落的星星。它不再發光，外殼焦黑，看起來像一塊普通的石頭。而坑洞邊緣，一個由純粹黑暗構成的巨大陰影正在蠕動，那就是芬尼克所說的守護者。\n陰影對艾拉發出低吼，它因孤獨和被遺忘而充滿憤怒。它守護著這顆不再發光的星星，是因為這是它唯一的陪伴。艾拉沒有害怕，她慢慢走上前，將羅盤放在星核上。她輕聲對陰影說：「光並不是消失了，只是需要被重新喚醒。你不是想吞噬它，你只是太久沒有感受到溫暖了。」\n\n第五章：重燃的光\n艾拉的話語似乎觸動了陰影。她將手放在羅盤上，集中精神，將自己對星空的熱愛、對村莊的思念，以及旅途中的勇氣全部注入其中。羅盤發出微弱的光芒，滲入星核。奇蹟發生了，星核的裂縫中透出溫暖的光，越來越亮，最終照亮了整片空地。\n陰影在光芒中發出滿足的嘆息，它的形體漸漸縮小，化作一個溫順的小影子，依偎在星核旁。它不再是吞噬光的怪物，而是真正找到了歸宿的守護者。\n\n第六章：歸途與新的起點\n艾拉知道，她無法將星星帶回天空，但她找到了更重要的東西。她對芬尼克微笑，將羅盤收好。回村的路上，她發現森林不再那麼陰森，陽光透過樹葉的縫隙灑下，充滿生機。\n回到村莊，人們發現，雖然「守護者之星」沒有回來，但村莊裡的每一個人心中，都點亮了一顆屬於自己的、永不熄滅的星光。艾拉明白，真正的守護並非來自天上，而是源於內心被點燃的希望與勇氣。而她的冒險，才剛剛開始。\n\n第七章：低語的羅盤\n日子一天天過去，艾拉時常拿出那枚黃銅羅盤。它不再指向森林，而是輕輕地、有節奏地顫動，彷彿在訴說著星辰的秘密。她開始學習古老的星圖，將羅盤的顫動與星辰的運行聯繫起來。她發現，這不僅僅是一個尋找失物的工具，更是一把解讀宇宙語言的鑰匙。\n\n第八章：森林的守護者\n艾拉偶爾會回到森林的中心看望那顆重燃的星星和它的小小守護者。那片空地變成了一個充滿奇異光芒的聖地，吸引了許多迷路的動物前來歇息。陰影不再孤單，它學會了分享光芒，而不是佔有。艾拉意識到，每一個生命，無論多麼渺小或看似黑暗，內心都渴望著連結與溫暖。\n\n第九章：星辰的召喚\n一個晴朗的夜晚，當艾拉再次觀察星空時，羅盤的指針突然穩定地指向了遙遠的北方山脈。她知道，這是一個新的召喚，另一段未知的旅程在等著她。但這一次，她不再是孤身一人。她的心中有著永不熄滅的星光，身邊有著忠誠的夥伴，還有整個村莊的支持。她微笑著，迎向了新的黎明。`,
-      book_garden_content: `序言：你的內心花園\n想像一下，在你的內心深處，有一座屬於你自己的花園。有時候，它陽光明媚，繁花盛開；有時候，它也會經歷風雨，雜草叢生。這本書，就是一份園藝指南，邀請你一起學習如何照料這座獨一無二的心靈花園。\n\n第一章：練習「在場」的藝術\n我們常常為過去懊悔，為未來焦慮，卻唯獨錯過了正在發生的「現在」。正念，就是將注意力帶回此刻的練習。找一個舒服的姿勢坐下，閉上眼睛，感受你的呼吸。一呼一吸，就像花園裡溫柔的微風。當思緒飄走，不用苛責，只需像牽著一個好奇的孩子一樣，溫柔地把它帶回你的呼吸上。每天練習五分鐘，你會發現，你的花園土壤會變得更加肥沃。\n\n第二章：給情緒澆水，而非淹沒\n情緒就像天氣，有晴有雨，沒有好壞之分。當悲傷、憤怒或焦慮來臨時，不要試圖築起高牆阻擋它們。想像你正在給一株需要水的植物澆水。承認它的存在：「哦，悲傷來了。」感受它在身體裡的感覺，是胸口發緊，還是喉嚨哽咽？靜靜地陪伴它，不加評判。你會發現，被溫柔注視的情緒，就像得到適量水分的植物，會平靜下來，而不會釀成洪水。\n\n第三章：拔除「比較」的雜草\n「比較」是心靈花園中最具破壞力的雜草。它悄悄生長，吸取你的養分，讓你忘記自己花朵的獨特之美。當你發現自己又在拿自己的成就、外貌或生活與他人比較時，輕輕地對自己說：「這是一株比較的雜草。」然後，將注意力轉向自己擁有的東西。也許你有一朵開得特別燦爛的向日葵（你的善良），或是一片充滿香氣的薄荷（你的幽默感）。欣賞你自己的花園，而不是羨慕別人的。\n\n第四章：種下「感恩」的種子\n感恩是最高效的肥料，能讓你的花園充滿生機。每天睡前，花幾分鐘時間，想出三件今天值得感謝的小事。可能是一杯溫暖的咖啡，一句朋友的問候，或是窗外一抹美麗的晚霞。把這些「感恩種子」種下，你會發現，即使在陰天，你的花園裡也總有幾朵小花在悄然綻放，提醒你生活中的美好。\n\n第五章：建立「界線」的籬笆\n一個健康的花園需要籬笆，以防被隨意踐踏。學會對那些消耗你過多精力的人和事說「不」，就是為你的花園建立籬笆。設立界線不是自私，而是自我關懷。它意味著你了解自己的能量是有限的，並選擇將它用在滋養你花園內最珍貴的植物上。一個有籬笆保護的花園，才能安全、茁壯地成長。\n\n第六章：修剪枯萎的枝葉\n在我們的花園裡，有些舊的信念、習慣或關係可能已經不再滋養我們，反而變成了枯枝敗葉，阻礙新生。學會「修剪」是園丁的必修課。這需要勇氣去識別哪些部分已經枯萎，並溫柔而堅定地將它們放下。每一次修剪，都是為了讓陽光能照進來，為新的成長騰出空間。\n\n第七章：欣賞花園的四季\n心靈花園和自然界的花園一樣，有著自己的季節。有時是充滿活力的春天，有時是熱情奔放的夏天，有時是平靜豐收的秋天，有時則是萬物沉寂的冬天。學會欣賞每一個季節的獨特之美，不要在冬天時強求花開。在休眠的季節裡，正是根系在地下積蓄力量的時候。相信你的花園有其內在的智慧和節奏。\n\n第八章：與他人分享你的花園\n當你的花園充滿生機時，不要吝嗇與他人分享。分享一朵鮮花（一句讚美），一枚果實（一次幫助），甚至只是邀請朋友進來坐一坐（一次真誠的傾聽）。分享不會讓你的花園變得貧瘠，反而會吸引更多的蜜蜂和蝴蝶，帶來新的種子和活力。一個懂得分享的花園，會變得更加豐富多彩。\n\n結語：花園一直在這裡\n你的心靈花園，永遠在你之內，等待你的照料。無論外界如何變化，你總可以回到這個寧靜的地方，拔草、澆水、播種。你就是自己最好的園丁。願你的花園，四季常青，繁花似錦。`,
+ 
+  const additionalTranslations = {
+    'zh-TW': {
+        item_sunglasses_name: '太陽眼鏡', item_sunglasses_desc: '一副很酷的配件。',
+        item_suit_name: '西裝', item_suit_desc: '看起來很專業。',
+        item_cap_white_name: '白色鴨舌帽', item_cap_white_desc: '經典簡潔的風格。',
+        item_shorts_red_name: '紅色短褲', item_shorts_red_desc: '充滿活力的選擇。',
+        item_cap_red_name: '紅色鴨舌帽', item_cap_red_desc: '引人注目的紅色帽子。',
+        item_cap_blue_name: '藍色鴨舌帽', item_cap_blue_desc: '冷靜沉穩的藍色。',
+        item_glasses_round_name: '圓框眼鏡', item_glasses_round_desc: '帶點復古的文青感。',
+        item_glasses_square_name: '方框眼鏡', item_glasses_square_desc: '俐落的現代風格。',
+        item_shirt_tee_name: '白色T恤', item_shirt_tee_desc: '百搭的基本款。',
+        item_shirt_jacket_name: '夾克', item_shirt_jacket_desc: '適合微涼的天氣。',
+        item_shirt_hoodie_name: '帽T', item_shirt_hoodie_desc: '舒適休閒的穿搭。',
+        item_pants_jeans_name: '牛仔褲', item_pants_jeans_desc: '永不退流行的經典。',
+        item_pants_track_name: '運動褲', item_pants_track_desc: '方便活動的褲子。',
+        item_pants_khaki_name: '卡其褲', item_pants_khaki_desc: '輕鬆的休閒風格。',
+        item_cape_starlight_name: '星光斗篷', item_cape_starlight_desc: '閃爍著宇宙的光芒。',
+        item_crown_royal_name: '皇家王冠', item_crown_royal_desc: '尊貴的象徵。',
+        item_boots_rocket_name: '火箭靴', item_boots_rocket_desc: '感覺能飛起來！',
+        pet_cat_bw_name: '黑白貓',
+        book_compass_name: '星辰追逐者的羅盤',
+        book_garden_name: '寧靜的心靈花園',
+        book_emotions_name: '情緒整理術',
+        book_mindfulness_name: '當下的力量',
+    },
+    'zh-CN': {
+        item_sunglasses_name: '太阳眼镜', item_sunglasses_desc: '一副很酷的配件。',
+        item_suit_name: '西装', item_suit_desc: '看起来很专业。',
+        item_cap_white_name: '白色鸭舌帽', item_cap_white_desc: '经典简洁的风格。',
+        item_shorts_red_name: '红色短裤', item_shorts_red_desc: '充满活力的选择。',
+        item_cap_red_name: '红色鸭舌帽', item_cap_red_desc: '引人注目的红色帽子。',
+        item_cap_blue_name: '蓝色鸭舌帽', item_cap_blue_desc: '冷静沉稳的蓝色。',
+        item_glasses_round_name: '圆框眼镜', item_glasses_round_desc: '带点复古的文青感。',
+        item_glasses_square_name: '方框眼镜', item_glasses_square_desc: '俐落的现代风格。',
+        item_shirt_tee_name: '白色T恤', item_shirt_tee_desc: '百搭的基本款。',
+        item_shirt_jacket_name: '夹克', item_shirt_jacket_desc: '适合微凉的天气。',
+        item_shirt_hoodie_name: '帽衫', item_shirt_hoodie_desc: '舒适休闲的穿搭。',
+        item_pants_jeans_name: '牛仔裤', item_pants_jeans_desc: '永不退流行的经典。',
+        item_pants_track_name: '运动裤', item_pants_track_desc: '方便活动的裤子。',
+        item_pants_khaki_name: '卡其裤', item_pants_khaki_desc: '轻松的休闲风格。',
+        item_cape_starlight_name: '星光斗篷', item_cape_starlight_desc: '闪烁着宇宙的光芒。',
+        item_crown_royal_name: '皇家王冠', item_crown_royal_desc: '尊贵的象征。',
+        item_boots_rocket_name: '火箭靴', item_boots_rocket_desc: '感觉能飞起来！',
+        pet_cat_bw_name: '黑白猫',
+        book_compass_name: '星辰追逐者的罗盘',
+        book_garden_name: '宁静的心灵花园',
+        book_emotions_name: '情绪整理术',
+        book_mindfulness_name: '当下的力量',
+    },
+    'en': {
+        item_sunglasses_name: 'Sunglasses', item_sunglasses_desc: 'A pair of cool shades.',
+        item_suit_name: 'Suit', item_suit_desc: 'Looks very professional.',
+        item_cap_white_name: 'White Cap', item_cap_white_desc: 'A classic and clean style.',
+        item_shorts_red_name: 'Red Shorts', item_shorts_red_desc: 'A vibrant choice.',
+        item_cap_red_name: 'Red Cap', item_cap_red_desc: 'An eye-catching red hat.',
+        item_cap_blue_name: 'Blue Cap', item_cap_blue_desc: 'A calm and steady blue.',
+        item_glasses_round_name: 'Round Glasses', item_glasses_round_desc: 'A touch of retro, literary feel.',
+        item_glasses_square_name: 'Square Glasses', item_glasses_square_desc: 'A sharp, modern style.',
+        item_shirt_tee_name: 'White T-shirt', item_shirt_tee_desc: 'A versatile basic item.',
+        item_shirt_jacket_name: 'Jacket', item_shirt_jacket_desc: 'Suitable for cool weather.',
+        item_shirt_hoodie_name: 'Hoodie', item_shirt_hoodie_desc: 'Comfortable and casual wear.',
+        item_pants_jeans_name: 'Jeans', item_pants_jeans_desc: 'A timeless classic.',
+        item_pants_track_name: 'Track Pants', item_pants_track_desc: 'Pants for easy movement.',
+        item_pants_khaki_name: 'Khaki Pants', item_pants_khaki_desc: 'A relaxed, casual style.',
+        item_cape_starlight_name: 'Starlight Cape', item_cape_starlight_desc: 'Shimmers with the light of the cosmos.',
+        item_crown_royal_name: 'Royal Crown', item_crown_royal_desc: 'A symbol of nobility.',
+        item_boots_rocket_name: 'Rocket Boots', item_boots_rocket_desc: 'Feels like you could fly!',
+        pet_cat_bw_name: 'Black & White Cat',
+        book_compass_name: 'The Star Chaser\'s Compass',
+        book_garden_name: 'The Serene Mind Garden',
+        book_emotions_name: 'The Art of Emotional Regulation',
+        book_mindfulness_name: 'The Power of Now',
+    },
+    'ja': {
+        item_sunglasses_name: 'サングラス', item_sunglasses_desc: 'クールなアクセサリー。',
+        item_suit_name: 'スーツ', item_suit_desc: 'とてもプロフェッショナルに見える。',
+        item_cap_white_name: '白いキャップ', item_cap_white_desc: 'クラシックでクリーンなスタイル。',
+        item_shorts_red_name: '赤いショートパンツ', item_shorts_red_desc: '活力に満ちた選択。',
+        item_cap_red_name: '赤いキャップ', item_cap_red_desc: '人目を引く赤い帽子。',
+        item_cap_blue_name: '青いキャップ', item_cap_blue_desc: '落ち着いた青色。',
+        item_glasses_round_name: '丸メガネ', item_glasses_round_desc: 'レトロで文化的な雰囲気。',
+        item_glasses_square_name: '四角いメガネ', item_glasses_square_desc: 'シャープでモダンなスタイル。',
+        item_shirt_tee_name: '白いTシャツ', item_shirt_tee_desc: '万能な基本アイテム。',
+        item_shirt_jacket_name: 'ジャケット', item_shirt_jacket_desc: '涼しい天気にぴったり。',
+        item_shirt_hoodie_name: 'パーカー', item_shirt_hoodie_desc: '快適でカジュアルな服装。',
+        item_pants_jeans_name: 'ジーンズ', item_pants_jeans_desc: '時代を超えて愛される定番。',
+        item_pants_track_name: 'トラックパンツ', item_pants_track_desc: '動きやすいパンツ。',
+        item_pants_khaki_name: 'カーキパンツ', item_pants_khaki_desc: 'リラックスしたカジュアルスタイル。',
+        item_cape_starlight_name: '星光のマント', item_cape_starlight_desc: '宇宙の光で輝いている。',
+        item_crown_royal_name: '王家の冠', item_crown_royal_desc: '高貴さの象徴。',
+        item_boots_rocket_name: 'ロケットブーツ', item_boots_rocket_desc: '飛べそうな気がする！',
+        pet_cat_bw_name: '白黒猫',
+        book_compass_name: '星を追う者の羅針盤',
+        book_garden_name: '静寂な心の庭',
+        book_emotions_name: '感情整理の術',
+        book_mindfulness_name: '「今」という力',
+    }
+  };
+  Object.keys(additionalTranslations).forEach(lang => {
+      Object.assign(LANG_STRINGS[lang], additionalTranslations[lang]);
   });
-  // ... 其他語言的書本內容也相應增加 ...
-
 
   /* =============================
      繪圖函式
@@ -358,22 +481,22 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (state === 'sitting' || state === 'reading') { py += 2; }
-    
+   
     const skin='#f2d2b6', hair='#3b2d20', shoes='#151a30', outline='#0b0e1c';
     const capColors = {cap_white:'#f5f6fa', cap_red:'#e84118', cap_blue:'#3742fa', crown_royal: '#f1c40f'};
-    
+   
     let shirtColor = '#3c6fd8', pantsColor = '#2a3558';
     if(equip.body === 'suit') { shirtColor = '#2b3a67'; pantsColor = '#1f2847'; }
     if(equip.body === 'shirt_tee') shirtColor = '#ffffff';
     if(equip.body === 'shirt_jacket') shirtColor = '#4b6584';
     if(equip.body === 'shirt_hoodie') shirtColor = '#d1d8e0';
     if(equip.body === 'cape_starlight') { shirtColor = '#2c3e50'; }
-    
+   
     if(equip.legs === 'shorts_red') pantsColor = '#e84118';
     if(equip.legs === 'pants_jeans') pantsColor = '#2c3e50';
     if(equip.legs === 'pants_track') pantsColor = '#778ca3';
     if(equip.legs === 'pants_khaki') pantsColor = '#be9a60';
-    
+   
     if(equip.body === 'cape_starlight'){
         plotRect(x-5, y+1, 10, 8, '#4834d4');
         for(let i=0; i<3; i++) plotRect(x-4+i*3, y+2+i, 1, 1, '#f1c40f');
@@ -427,23 +550,16 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function drawPlayerName(name, x, y) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.font = '8px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(name, x, y + 15);
-  }
-
   function plotRect(px,py,w,h,color,alpha=1){
     ctx.globalAlpha = alpha; ctx.fillStyle = color;
     ctx.fillRect(px,py,w,h);
     ctx.globalAlpha = 1;
   }
-  
+ 
   function drawPet(px, py, dir, state) {
       const x = Math.round(px), y = Math.round(py);
       const bodyWhite = '#f1f2f6', bodyBlack = '#2f3542', collar = '#e84118', eyeColor = '#000';
-      
+     
       plotRect(x-4, y-2, 8, 6, bodyWhite); // body
       plotRect(x-2, y-5, 4, 3, bodyWhite); // head
       plotRect(x-3, y-6, 2, 1, bodyBlack); // ears
@@ -459,8 +575,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
   function drawMap(){
     ctx.fillStyle = floorPattern; ctx.fillRect(0,0,W,H);
+    const sunX = W - 25, sunY = 25, sunRadius = 10;
     if (isDay) {
-        ctx.fillStyle = '#ffeaa7'; ctx.beginPath(); ctx.arc(W - 20, 20, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#f9d71c';
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * (2 * Math.PI);
+            const x1 = sunX + Math.cos(angle) * (sunRadius + 2);
+            const y1 = sunY + Math.sin(angle) * (sunRadius + 2);
+            const x2 = sunX + Math.cos(angle - 0.1) * (sunRadius + 8);
+            const y2 = sunY + Math.sin(angle - 0.1) * (sunRadius + 8);
+            const x3 = sunX + Math.cos(angle + 0.1) * (sunRadius + 8);
+            const y3 = sunY + Math.sin(angle + 0.1) * (sunRadius + 8);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.lineTo(x3, y3);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.fillStyle = '#ffeaa7'; ctx.beginPath(); ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2); ctx.fill();
     } else {
         ctx.fillStyle = '#f1f2f6'; ctx.beginPath(); ctx.arc(W - 22, 22, 10, 0, Math.PI * 2); ctx.fill();
         ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
@@ -476,10 +609,21 @@ window.addEventListener('DOMContentLoaded', () => {
         ctx.fillStyle = '#d1d8e0'; ctx.fillRect(BED.x + 3, BED.y + 4, 10, 1);
         ctx.fillStyle = '#4d3a2d'; ctx.fillRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
     } else if (player.scene === 'library') {
-        const { LIBRARIAN, DOOR, BOOKSHELVES } = SCENES.library;
+        const { LIBRARIAN, DOOR, BOOKSHELF } = SCENES.library;
         drawDude(LIBRARIAN.x, LIBRARIAN.y, 'down', { body: 'suit' }, 'idle');
+        
         ctx.fillStyle = '#8c6d53';
-        BOOKSHELVES.forEach(shelf => ctx.fillRect(shelf.x, shelf.y, shelf.w, shelf.h));
+        ctx.fillRect(BOOKSHELF.x, BOOKSHELF.y, BOOKSHELF.w, BOOKSHELF.h);
+        const bookColors = ['#a0522d', '#5f4c3a', '#2e8b57', '#4682b4', '#b22222', '#663399'];
+        for (let y = BOOKSHELF.y + 5; y < BOOKSHELF.y + BOOKSHELF.h - 5; y += 12) {
+            for (let x = BOOKSHELF.x + 5; x < BOOKSHELF.x + BOOKSHELF.w - 8; ) {
+                const bookWidth = Math.floor(Math.random() * 4 + 3);
+                ctx.fillStyle = bookColors[Math.floor(Math.random() * bookColors.length)];
+                ctx.fillRect(x, y, bookWidth, 10);
+                x += bookWidth + 2;
+            }
+        }
+        
         ctx.fillStyle = '#4d3a2d'; ctx.fillRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
     }
   }
@@ -522,39 +666,37 @@ window.addEventListener('DOMContentLoaded', () => {
     e.preventDefault(); const dir = t.dataset.dir;
     hold[dir] = (e.type==='touchstart');
   }
-  
+ 
   function isColliding(a, b){ return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 
   function checkInteractions(){
-      player.interactingWith = null;
       if (player.state !== 'idle') return;
       const p_hitbox = {x: player.x-4, y: player.y-8, w: 8, h: 16};
-      
+     
       if (player.scene === 'room') {
         const { BED, CHAIR, DOOR } = SCENES.room;
-        if (isColliding(p_hitbox, CHAIR)) {
+        if (isColliding(p_hitbox, CHAIR) && player.lastInteractionObject !== CHAIR) {
             player.state = 'sitting'; player.x = CHAIR.x + CHAIR.w / 2; player.y = CHAIR.y; showHint(t('hint_sit'));
-        } else if (isColliding(p_hitbox, BED)) {
+            player.lastInteractionObject = CHAIR;
+        } else if (isColliding(p_hitbox, BED) && player.lastInteractionObject !== BED) {
             player.state = 'sleeping'; player.x = BED.x + BED.w / 2 - 5; player.y = BED.y + BED.h / 2; showHint(t('hint_sleep'));
-        } else if (isColliding(p_hitbox, DOOR)) {
+            player.lastInteractionObject = BED;
+        } else if (isColliding(p_hitbox, DOOR) && player.sceneTransitionCooldown <= 0) {
             player.scene = 'library'; player.x = SCENES.library.DOOR.x + SCENES.library.DOOR.w/2; player.y = SCENES.library.DOOR.y - 16;
+            player.sceneTransitionCooldown = 30;
         }
       } else if (player.scene === 'library') {
-          const { DOOR, LIBRARIAN, BOOKSHELVES } = SCENES.library;
-          if (isColliding(p_hitbox, DOOR)) {
-              player.scene = 'room'; player.x = SCENES.room.DOOR.x + SCENES.room.DOOR.w/2; player.y = SCENES.room.DOOR.y + 16;
-          } else if (isColliding(p_hitbox, LIBRARIAN)) {
-              player.interactingWith = 'librarian';
-              togglePanel('backpackSheet', true);
-          } else {
-            let isReading = false;
-            BOOKSHELVES.forEach(shelf => {
-                if (isColliding(p_hitbox, shelf)) {
-                    player.state = 'reading'; player.x = shelf.x - 8; player.y = shelf.y + shelf.h/2; showHint(t('hint_read'));
-                    isReading = true;
-                }
-            });
-            if(!isReading) player.interactingWith = null;
+          const { DOOR, LIBRARIAN, BOOKSHELF } = SCENES.library;
+          if (isColliding(p_hitbox, DOOR) && player.sceneTransitionCooldown <= 0) {
+              player.scene = 'room'; player.x = SCENES.room.DOOR.x + SCENES.room.DOOR.w/2; 
+              player.y = SCENES.room.DOOR.y + 26;
+              player.sceneTransitionCooldown = 30;
+          } else if (isColliding(p_hitbox, LIBRARIAN) && player.lastInteractionObject !== LIBRARIAN) {
+              togglePanel('shopSheet', true);
+              player.lastInteractionObject = LIBRARIAN;
+          } else if (isColliding(p_hitbox, BOOKSHELF) && player.lastInteractionObject !== BOOKSHELF) {
+              player.state = 'reading'; player.x = BOOKSHELF.x - 8; player.y = BOOKSHELF.y + BOOKSHELF.h/2; showHint(t('hint_read'));
+              player.lastInteractionObject = BOOKSHELF;
           }
       }
   }
@@ -564,16 +706,9 @@ window.addEventListener('DOMContentLoaded', () => {
       pet.state_timer--;
       if (pet.state_timer <= 0) {
           pet.state = Math.random() < 0.7 ? 'wandering' : 'sitting';
-          pet.state_timer = Math.random() * 180 + 120; // 2-5 seconds
+          pet.state_timer = Math.random() * 180 + 120;
           const dirs = ['up', 'down', 'left', 'right'];
           pet.dir = dirs[Math.floor(Math.random() * dirs.length)];
-
-          if (Math.random() < 0.05) { // 5% chance to find a coin when changing state
-              player.gold++;
-              showHint(t('hint_pet_found_gold'));
-              effects.push({ text: '💰', x: pet.x, y: pet.y - 8, vx: 0, vy: -0.2, life: 60, maxLife: 60, size: 12, color: '#f1c40f' });
-              updateDailyStatus();
-          }
       }
 
       if (pet.state === 'wandering') {
@@ -583,20 +718,37 @@ window.addEventListener('DOMContentLoaded', () => {
           pet.x = Math.max(8, Math.min(W-8, pet.x + dx * 0.5));
           pet.y = Math.max(16, Math.min(H-8, pet.y + dy * 0.5));
       }
-      
+     
       if(pet.love_timer > 0) {
           pet.love_timer--;
           if (pet.love_timer % 15 === 0) {
               effects.push({ text: '❤️', x: pet.x, y: pet.y - 8, vx: 0, vy: -0.1, life: 30, maxLife: 30, size: 10, color: '#e74c3c' });
           }
       }
+      
+      pet.gold_find_timer--;
+      if (pet.gold_find_timer <= 0) {
+          player.gold += 2;
+          updateDailyStatus();
+          effects.push({ text: '💰+2', x: pet.x, y: pet.y - 8, vx: 0, vy: -0.2, life: 60, maxLife: 60, size: 12, color: 'var(--coin)' });
+          pet.gold_find_timer = Math.random() * 1200 + 1200;
+      }
   }
 
   function step(){
+    if (player.sceneTransitionCooldown > 0) player.sceneTransitionCooldown--;
+
+    if (player.lastInteractionObject) {
+        const p_hitbox = {x: player.x-4, y: player.y-8, w: 8, h: 16};
+        if (!isColliding(p_hitbox, player.lastInteractionObject)) {
+            player.lastInteractionObject = null;
+        }
+    }
+
     let dx=0, dy=0;
     if (keys.has('ArrowUp')||hold.up) dy=-1; if (keys.has('ArrowDown')||hold.down) dy=1;
     if (keys.has('ArrowLeft')||hold.left) dx=-1; if (keys.has('ArrowRight')||hold.right) dx=1;
-    
+   
     if (player.state !== 'idle' && (dx || dy)) {
         const lastState = player.state;
         player.state = 'idle';
@@ -606,17 +758,27 @@ window.addEventListener('DOMContentLoaded', () => {
     } else if (player.state === 'idle' && (dx || dy)) {
         if(dx !== 0) player.dir = dx > 0 ? 'right' : 'left';
         else if(dy !== 0) player.dir = dy > 0 ? 'down' : 'up';
-        
+       
         const len = Math.hypot(dx,dy)||1;
-        player.x += (dx/len)*player.speed;
-        player.y += (dy/len)*player.speed;
+        let nextX = player.x + (dx/len)*player.speed;
+        let nextY = player.y + (dy/len)*player.speed;
 
-        player.x = Math.max(8, Math.min(W-8, player.x));
-        player.y = Math.max(16, Math.min(H-8, player.y));
+        if(player.scene === 'library') {
+            const npc_hitbox = SCENES.library.LIBRARIAN;
+            if (isColliding({x: nextX-4, y: player.y-8, w:8, h:16}, npc_hitbox)) {
+                nextX = player.x;
+            }
+            if (isColliding({x: player.x-4, y: nextY-8, w:8, h:16}, npc_hitbox)) {
+                nextY = player.y;
+            }
+        }
+       
+        player.x = Math.max(8, Math.min(W-8, nextX));
+        player.y = Math.max(16, Math.min(H-8, nextY));
         player.movedSinceLastSave = true;
         checkInteractions();
     }
-    
+   
     const p_hitbox = {x: player.x-4, y: player.y-4, w: 8, h: 8};
     const pet_hitbox = {x: pet.x-4, y: pet.y-4, w: 8, h: 8};
     if (pet.visible && player.scene === 'room' && isColliding(p_hitbox, pet_hitbox)) {
@@ -639,13 +801,24 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     if(player.scene === 'room') updatePet();
-    
+   
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0,0,W,H);
     drawMap();
     if(player.scene === 'room' && pet.visible) drawPet(pet.x, pet.y, pet.dir, pet.state);
     drawDude(player.x, player.y, player.dir, player.equip, player.state);
-    drawPlayerName(player.name, player.x, player.y);
+    
+    if (player.name) {
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.font = '10px sans-serif';
+        ctx.shadowColor = "rgba(0,0,0,0.5)";
+        ctx.shadowBlur = 2;
+        ctx.fillText(player.name, player.x, player.y + 16);
+        ctx.textAlign = 'left';
+        ctx.shadowBlur = 0;
+    }
+    
     drawEffects();
     requestAnimationFrame(step);
   }
@@ -655,7 +828,7 @@ window.addEventListener('DOMContentLoaded', () => {
   ============================= */
   function saveState(){
     try {
-      const state = { name: player.name, x: player.x, y: player.y, equip: player.equip, unlockedItems: [...player.unlockedItems], inventory: [...player.inventory], gold: player.gold, scene: player.scene, lang: currentLang };
+      const state = { x: player.x, y: player.y, equip: player.equip, unlockedItems: [...player.unlockedItems], inventory: [...player.inventory], gold: player.gold, scene: player.scene, lang: currentLang, name: player.name };
       localStorage.setItem('book-rpg-state-v6', JSON.stringify(state));
     } catch(e) { console.warn("無法儲存狀態:", e); }
   }
@@ -665,10 +838,11 @@ window.addEventListener('DOMContentLoaded', () => {
       const savedState = localStorage.getItem('book-rpg-state-v6');
       if (savedState) {
         const state = JSON.parse(savedState);
+        if (state.name) player.name = state.name;
+        delete state.name;
         Object.assign(player, state);
         player.unlockedItems = new Set(state.unlockedItems);
         player.inventory = new Set(state.inventory);
-        currentLang = state.lang || 'zh-TW';
       }
     } catch(e) { console.warn("無法讀取狀態:", e); localStorage.removeItem('book-rpg-state-v6'); }
   }
@@ -685,7 +859,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   function nextMidnight(){ const d = new Date(); d.setHours(24,0,0,0); return d; }
   function seededRandom(seed) { let x = Math.sin(seed) * 10000; return x - Math.floor(x); }
-  
+ 
   function updateDailyStatus(){
       const key = todayKey();
       answerBtn.disabled = localStorage.getItem('daily.usedAt') === key;
@@ -694,7 +868,7 @@ window.addEventListener('DOMContentLoaded', () => {
       drawEquipBtn.textContent = drawEquipBtn.disabled ? t('btn_draw_done') : t('btn_draw_equip');
       $('#goldDisplay').textContent = player.gold;
   }
-  
+ 
   function updateCountdown(){
     const remain = nextMidnight() - new Date();
     if (remain <= 1000) { 
@@ -721,7 +895,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function onAnswerBtnClick(){
       const key = todayKey();
       let seed = localStorage.getItem('daily.answerSeed');
-      
+     
       if (localStorage.getItem('daily.usedAt') !== key) {
           localStorage.setItem('daily.usedAt', key);
           seed = String(Date.now() + Math.random());
@@ -729,7 +903,7 @@ window.addEventListener('DOMContentLoaded', () => {
           player.gold += 2;
           saveState();
       }
-      
+     
       const s = pickDailyAnswer(Number(seed));
       showHint(`<b>${t('answer_title')}：</b>${s}`);
       updateDailyStatus();
@@ -740,7 +914,7 @@ window.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('daily.equipDrawnAt', key);
     const unlockable = ALL_EQUIPMENT.filter(item => !player.unlockedItems.has(item.id));
     if(unlockable.length === 0){ showHint(t('hint_all_items')); updateDailyStatus(); return; }
-    
+   
     const newItem = unlockable[Math.floor(Math.random() * unlockable.length)];
     player.unlockedItems.add(newItem.id);
     saveState();
@@ -757,17 +931,24 @@ window.addEventListener('DOMContentLoaded', () => {
           const isOpen = forceOpen !== undefined ? forceOpen : !sheet.classList.contains('open');
           if (sheet.id === panelId) {
               sheet.classList.toggle('open', isOpen);
-              if (isOpen) renderAllSheets();
+              if (isOpen) {
+                 renderAllSheets();
+                 if (panelId === 'nameSheet') {
+                    $('#nameInput').value = player.name;
+                    $('#nameInput').focus();
+                 }
+              }
           } else {
               sheet.classList.remove('open');
           }
       });
   }
-  
+ 
   function renderAllSheets() {
       if ($('#gearSheet').classList.contains('open')) renderGearSheet();
       if ($('#petSheet').classList.contains('open')) renderPetSheet();
       if ($('#backpackSheet').classList.contains('open')) renderBackpackSheet();
+      if ($('#shopSheet').classList.contains('open')) renderShopSheet();
   }
 
   function renderGearSheet() {
@@ -786,47 +967,64 @@ window.addEventListener('DOMContentLoaded', () => {
         grid.innerHTML += `<div class="item"><b>${t(p.nameKey)}</b></div><button class="${pet.visible ? 'btn-ok' : ''}" data-pet-id="${p.id}">${pet.visible ? t('btn_unsummon') : t('btn_summon')}</button>`;
       });
   }
-  
+ 
   function renderBackpackSheet() {
       const grid = $('#backpackGrid'); grid.innerHTML = '';
+      let ownedBooks = 0;
+      ALL_BOOKS.forEach(book => {
+        if(player.inventory.has(book.id)){
+          grid.innerHTML += `<div class="item"><b>${t(book.nameKey)}</b></div><button data-book-id="${book.id}">${t('btn_read')}</button>`;
+          ownedBooks++;
+        }
+      });
+      if (ownedBooks === 0) {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--muted);">${t('backpack_empty')}</div>`;
+      }
+  }
+
+  function renderShopSheet() {
+      const grid = $('#shopGrid'); grid.innerHTML = '';
       ALL_BOOKS.forEach(book => {
           const owned = player.inventory.has(book.id);
-          const canBuy = player.interactingWith === 'librarian';
-          grid.innerHTML += `<div class="item"><div><b>${t(book.nameKey)}</b></div><div class="small">${!owned && canBuy ? `${t('btn_buy')} 💰${book.price}` : ''}</div></div><button data-book-id="${book.id}" ${(!owned && !canBuy) ? 'disabled' : ''}>${owned ? t('btn_read') : t('btn_buy')}</button>`;
+          grid.innerHTML += `<div class="item"><div><b>${t(book.nameKey)}</b></div><div class="small">${owned ? '' : `${t('btn_buy')} 💰${book.price}`}</div></div><button data-book-id="${book.id}" ${owned ? 'disabled' : ''}>${owned ? t('btn_owned') : t('btn_buy')}</button>`;
       });
   }
-  
+ 
   $('#gearGrid').addEventListener('click', e => {
     const btn = e.target.closest('button[data-equip-id]'); if (!btn) return;
     const { equipId, equipType } = btn.dataset;
     player.equip[equipType] = (player.equip[equipType] === equipId) ? null : equipId;
     saveState(); renderGearSheet();
   });
-  
+ 
   $('#petGrid').addEventListener('click', e => {
       const btn = e.target.closest('button[data-pet-id]'); if (!btn) return;
       pet.visible = !pet.visible;
       renderPetSheet();
   });
-  
+ 
   $('#backpackGrid').addEventListener('click', e => {
       const btn = e.target.closest('button[data-book-id]'); if (!btn) return;
       const book = ALL_BOOKS.find(b => b.id === btn.dataset.bookId);
-      if (!book) return;
+      if (book && player.inventory.has(book.id)) {
+        openBook(book.id);
+      }
+  });
 
-      if (player.inventory.has(book.id)) {
-          openBook(book.id);
-      } else if (player.interactingWith === 'librarian') {
-          if (player.gold >= book.price) {
-              player.gold -= book.price;
-              player.inventory.add(book.id);
-              saveState();
-              updateDailyStatus();
-              renderBackpackSheet();
-              showHint(t('hint_buy_book', {price: book.price, bookName: t(book.nameKey)}));
-          } else {
-              showHint(t('hint_no_gold'));
-          }
+  $('#shopGrid').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-book-id]'); if (!btn) return;
+      const book = ALL_BOOKS.find(b => b.id === btn.dataset.bookId);
+      if (!book || player.inventory.has(book.id)) return;
+
+      if (player.gold >= book.price) {
+          player.gold -= book.price;
+          player.inventory.add(book.id);
+          saveState();
+          updateDailyStatus();
+          renderShopSheet();
+          showHint(t('hint_buy_book', {price: book.price, bookName: t(book.nameKey)}));
+      } else {
+          showHint(t('hint_no_gold'));
       }
   });
 
@@ -846,7 +1044,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderPage() {
-      const content = t(currentBook.contentKey);
+      const content = BOOK_CONTENT[currentLang][currentBook.contentKey];
       const totalPages = Math.ceil(content.length / charsPerPage);
       const start = currentPage * charsPerPage;
       const end = start + charsPerPage;
@@ -856,9 +1054,13 @@ window.addEventListener('DOMContentLoaded', () => {
       $('#prevPageBtn').disabled = currentPage === 0;
       $('#nextPageBtn').disabled = currentPage >= totalPages - 1;
   }
-  
+ 
   $('#prevPageBtn').addEventListener('click', () => { if(currentPage > 0) { currentPage--; renderPage(); }});
-  $('#nextPageBtn').addEventListener('click', () => { currentPage++; renderPage(); });
+  $('#nextPageBtn').addEventListener('click', () => { 
+      const content = BOOK_CONTENT[currentLang][currentBook.contentKey];
+      const totalPages = Math.ceil(content.length / charsPerPage);
+      if (currentPage < totalPages - 1) { currentPage++; renderPage(); }
+  });
   $('#closeBookBtn').addEventListener('click', () => $('#bookReader').classList.remove('open'));
 
   /* =============================
@@ -870,11 +1072,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const now = new Date();
     clockEl.textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
     isDay = now.getHours()>=6 && now.getHours()<18;
-    iconEl.style.background = isDay
-      ? 'radial-gradient(circle at 50% 45%, #ffd56b 0 60%, #0000 61%)'
-      : 'radial-gradient(circle at 50% 55%, #b9c9ff 0 60%, #0000 61%), radial-gradient(#5a6dd8 62%,#0000 63%)';
   }
-  
+ 
   (async function getTemp(){
     try{
       if (!navigator.geolocation) return;
@@ -891,11 +1090,9 @@ window.addEventListener('DOMContentLoaded', () => {
   ============================= */
   loadState();
   setLanguage(player.lang || 'zh-TW');
-  $('#nameInput').value = player.name;
-  
   setInterval(updateCountdown, 1000);
   updateCountdown();
-  tickClock(); setInterval(tickClock, 1000);
+  tickClock(); setInterval(tickClock, 1000 * 60);
   requestAnimationFrame(step);
 
   $('#langSwitcher').addEventListener('click', () => {
@@ -926,7 +1123,7 @@ window.addEventListener('DOMContentLoaded', () => {
           player.movedSinceLastSave = false;
       }
   }, 1500);
-  
+ 
   document.querySelectorAll('.close-btn').forEach(btn => {
       btn.addEventListener('click', () => togglePanel(btn.dataset.panel, false));
   });
@@ -936,17 +1133,18 @@ window.addEventListener('DOMContentLoaded', () => {
   $('#petBtn').addEventListener('click', () => togglePanel('petSheet'));
   $('#backpackBtn').addEventListener('click', () => togglePanel('backpackSheet'));
   $('#gearBtn').addEventListener('click', () => togglePanel('gearSheet'));
-  $('#profileBtn').addEventListener('click', () => togglePanel('profileSheet'));
+  $('#nameBtn').addEventListener('click', () => togglePanel('nameSheet'));
   
   $('#saveNameBtn').addEventListener('click', () => {
-      player.name = $('#nameInput').value.trim() || t('default_name', {defaultValue: '玩家'});
-      saveState();
-      showHint(t('hint_name_saved'));
-      togglePanel('profileSheet', false);
+    const newName = $('#nameInput').value.trim();
+    if (newName) {
+        player.name = newName;
+        saveState();
+        togglePanel('nameSheet', false);
+    }
   });
 });
 </script>
 </body>
 </html>
-
 
