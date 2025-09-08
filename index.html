@@ -38,6 +38,7 @@
   .dpad .down{left:52px;bottom:0}
   .dpad .left{left:0;top:52px}
   .dpad .right{right:0;top:52px}
+  .hud-btn{position:absolute;display:none;pointer-events:auto;z-index:5;padding:8px 12px;font-size:12px;min-width:60px;text-align:center;}
   /* 通用面板 */
   .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid #2a335f;padding:14px 12px;border-top-left-radius:16px;border-top-right-radius:16px;box-shadow:0 -10px 40px #0008;transform:translateY(110%);transition:transform .25s ease;z-index:10; max-height: 60vh; overflow-y: auto;}
   .sheet.open{transform:translateY(0)}
@@ -83,6 +84,8 @@
         <button class="left" data-dir="left">◀</button>
         <button class="right"data-dir="right">▶</button>
       </div>
+      <button id="useBtn" class="hud-btn" data-lang="btn_use">使用</button>
+      <button id="exitBtn" class="hud-btn btn-warn" data-lang="btn_exit">離開</button>
     </div>
   </div>
 
@@ -131,6 +134,14 @@
   <div class="grid" id="shopGrid"></div>
 </div>
 
+<div class="sheet" id="fashionShopSheet" aria-hidden="true">
+  <div class="row" style="justify-content:space-between;margin-bottom:8px">
+    <div><b data-lang="fashion_shop_title">潮流服飾</b> <span class="small" data-lang="fashion_shop_subtitle">（來點不一樣的風格？）</span></div>
+    <button class="close-btn" data-panel="fashionShopSheet" data-lang="btn_close">關閉</button>
+  </div>
+  <div class="grid" id="fashionShopGrid"></div>
+</div>
+
 <div class="sheet" id="nameSheet" aria-hidden="true">
   <div class="row" style="justify-content:space-between;margin-bottom:8px">
     <div><b data-lang="name_title">更改名字</b></div>
@@ -164,10 +175,10 @@ function initializeGame() {
   const $ = sel => document.querySelector(sel);
   const map = $('#map'), ctx = map.getContext('2d');
   const stage = $('#stage'), msgBox = $('#msgBox'), dpad = $('#dpad');
+  const useBtn = $('#useBtn'), exitBtn = $('#exitBtn');
   const isTouch = matchMedia('(pointer:coarse)').matches;
   let isDay = true;
   let effects = [];
-  let eatingEffect = { active: false, timer: 0, duration: 120 };
 
   /* =============================
      語言與在地化
@@ -175,20 +186,21 @@ function initializeGame() {
   const LANG_STRINGS = {
     'zh-TW': {
       ui_temp: '氣溫', ui_daily_reset: '每日重置', ui_lang: '語言', lang_symbol: '繁',
-      btn_answer: '今天答案', btn_answer_done: '已獲答案', btn_draw_equip: '抽裝備', btn_draw_done: '今日已抽', btn_gear: '裝備', btn_close: '關閉', btn_pet: '寵物', btn_backpack: '背包', btn_prev_page: '上一頁', btn_next_page: '下一頁', btn_buy: '購買', btn_read: '閱讀', btn_name: '名字', btn_save: '儲存',
+      btn_answer: '今天答案', btn_answer_done: '已獲答案', btn_draw_equip: '抽裝備', btn_draw_done: '今日已抽', btn_gear: '裝備', btn_close: '關閉', btn_pet: '寵物', btn_backpack: '背包', btn_prev_page: '上一頁', btn_next_page: '下一頁', btn_buy: '購買', btn_read: '閱讀', btn_name: '名字', btn_save: '儲存', btn_use: '使用', btn_exit: '離開',
       gear_title: '裝備', gear_subtitle: '（點按切換穿著）', btn_equip: '穿上', btn_unequip: '脫下',
       pet_title: '寵物', pet_subtitle: '（點按召喚/隱藏）', btn_summon: '召喚', btn_unsummon: '隱藏',
       backpack_title: '背包', backpack_subtitle: '（點按閱讀已購買的書）', backpack_empty: '你的背包空空如也。',
       shop_title: '書店', shop_subtitle: '（與我購買智慧吧！）', btn_owned: '已擁有',
+      fashion_shop_title: '潮流服飾', fashion_shop_subtitle: '（來點不一樣的風格？）',
       name_title: '更改名字',
       type_head: '頭部', type_eyes: '眼部', type_body: '身體', type_legs: '腿部',
       hint_welcome: '探索你的小空間吧！',
-      hint_sit: '你坐在桌邊... 按任意方向鍵離開。',
-      hint_sleep: '你躺在床上休息... 按任意方向鍵起床。',
-      hint_read: '你正在閱讀... 按任意方向鍵停止。',
+      hint_sit: '你坐在桌邊... 按離開鈕起身。',
+      hint_sleep: '你躺在床上休息... 按離開鈕起床。',
       hint_new_item: '恭喜你抽到新裝備：<b>{itemName}</b>！',
       hint_all_items: '恭喜！你已收集所有裝備！',
       hint_buy_book: '你花了 {price} 金幣買下了《{bookName}》。',
+      hint_buy_fashion: '你花了 {price} 金幣買下了「{itemName}」！',
       hint_no_gold: '金幣不足！',
       answer_title: '今日答案',
       answer_A: ["你已經走在路上","把目光放遠一點","慢慢來也沒關係","今天請溫柔對自己","先完成一件小事","把心安放好","勇敢，但不逞強","相信步伐的力量","把失敗當作回饋","試著微笑一下","接納不確定","允許自己休息","先呼吸，再出發","別忘了補水","把情緒說出來","堅持你認同的節奏","去散步五分鐘","寫下你感謝的三件事","你值得被善待","今天的你，已足夠好"],
@@ -198,20 +210,21 @@ function initializeGame() {
     },
     'zh-CN': {
       ui_temp: '气温', ui_daily_reset: '每日重置', ui_lang: '语言', lang_symbol: '简',
-      btn_answer: '今天答案', btn_answer_done: '已获答案', btn_draw_equip: '抽装备', btn_draw_done: '今日已抽', btn_gear: '装备', btn_close: '关闭', btn_pet: '宠物', btn_backpack: '背包', btn_prev_page: '上一页', btn_next_page: '下一页', btn_buy: '购买', btn_read: '阅读', btn_name: '名字', btn_save: '保存',
+      btn_answer: '今天答案', btn_answer_done: '已获答案', btn_draw_equip: '抽装备', btn_draw_done: '今日已抽', btn_gear: '装备', btn_close: '关闭', btn_pet: '宠物', btn_backpack: '背包', btn_prev_page: '上一页', btn_next_page: '下一页', btn_buy: '购买', btn_read: '阅读', btn_name: '名字', btn_save: '保存', btn_use: '使用', btn_exit: '离开',
       gear_title: '装备', gear_subtitle: '（点击切换穿着）', btn_equip: '穿上', btn_unequip: '脱下',
       pet_title: '宠物', pet_subtitle: '（点击召唤/隐藏）', btn_summon: '召唤', btn_unsummon: '隐藏',
       backpack_title: '背包', backpack_subtitle: '（点击阅读已购买的书）', backpack_empty: '你的背包空空如也。',
       shop_title: '书店', shop_subtitle: '（与我购买智慧吧！）', btn_owned: '已拥有',
+      fashion_shop_title: '潮流服饰', fashion_shop_subtitle: '（来点不一样的风格？）',
       name_title: '更改名字',
       type_head: '头部', type_eyes: '眼部', type_body: '身体', type_legs: '腿部',
       hint_welcome: '探索你的小空间吧！',
-      hint_sit: '你坐在桌边... 按任意方向键离开。',
-      hint_sleep: '你躺在床上休息... 按任意方向键起床。',
-      hint_read: '你正在阅读... 按任意方向键停止。',
+      hint_sit: '你坐在桌边... 按离开钮起身。',
+      hint_sleep: '你躺在床上休息... 按离开钮起床。',
       hint_new_item: '恭喜你抽到新装备：<b>{itemName}</b>！',
       hint_all_items: '恭喜！你已收集所有装备！',
       hint_buy_book: '你花了 {price} 金币买下了《{bookName}》。',
+      hint_buy_fashion: '你花了 {price} 金币买下了「{itemName}」！',
       hint_no_gold: '金币不足！',
       answer_title: '今日答案',
       answer_A: ["你已经走在路上","把目光放远一点","慢慢来也没关系","今天请温柔对自己","先完成一件小事","把心安放好","勇敢，但不逞强","相信步伐的力量","把失败当作回馈","试着微笑一下","接纳不确定","允许自己休息","先呼吸，再出发","别忘了补水","把情绪说出来","坚持你认同的节奏","去散步五分钟","写下你感谢的三件事","你值得被善待","今天的你，已足够好"],
@@ -221,20 +234,21 @@ function initializeGame() {
     },
     'en': {
       ui_temp: 'Temp', ui_daily_reset: 'Daily Reset', ui_lang: 'Language', lang_symbol: 'En',
-      btn_answer: "Today's Answer", btn_answer_done: "Answered", btn_draw_equip: 'Draw Gear', btn_draw_done: 'Drawn Today', btn_gear: 'Gear', btn_close: 'Close', btn_pet: 'Pet', btn_backpack: 'Backpack', btn_prev_page: 'Prev', btn_next_page: 'Next', btn_buy: 'Buy', btn_read: 'Read', btn_name: 'Name', btn_save: 'Save',
+      btn_answer: "Today's Answer", btn_answer_done: "Answered", btn_draw_equip: 'Draw Gear', btn_draw_done: 'Drawn Today', btn_gear: 'Gear', btn_close: 'Close', btn_pet: 'Pet', btn_backpack: 'Backpack', btn_prev_page: 'Prev', btn_next_page: 'Next', btn_buy: 'Buy', btn_read: 'Read', btn_name: 'Name', btn_save: 'Save', btn_use: 'Use', btn_exit: 'Exit',
       gear_title: 'Gear', gear_subtitle: '(Click to toggle)', btn_equip: 'Equip', btn_unequip: 'Unequip',
       pet_title: 'Pet', pet_subtitle: '(Click to summon/hide)', btn_summon: 'Summon', btn_unsummon: 'Hide',
       backpack_title: 'Backpack', backpack_subtitle: '(Click to read purchased books)', backpack_empty: 'Your backpack is empty.',
       shop_title: 'Bookstore', shop_subtitle: '(Buy some wisdom from me!)', btn_owned: 'Owned',
+      fashion_shop_title: 'Fashion Store', fashion_shop_subtitle: '(How about a different style?)',
       name_title: 'Change Name',
       type_head: 'Head', type_eyes: 'Eyes', type_body: 'Body', type_legs: 'Legs',
       hint_welcome: 'Explore your little space!',
-      hint_sit: 'You are sitting... Press any arrow key to leave.',
-      hint_sleep: 'You are resting... Press any arrow key to get up.',
-      hint_read: 'You are reading... Press any arrow key to stop.',
+      hint_sit: 'You are sitting... Press the Exit button to leave.',
+      hint_sleep: 'You are resting... Press the Exit button to get up.',
       hint_new_item: 'You got a new item: <b>{itemName}</b>!',
       hint_all_items: 'Congratulations! You have collected all items!',
       hint_buy_book: 'You spent {price} gold on "{bookName}".',
+      hint_buy_fashion: 'You spent {price} gold on "{itemName}"!',
       hint_no_gold: 'Not enough gold!',
       answer_title: "Today's Answer",
       answer_A: ["You are on your way.", "Look at the bigger picture.", "It's okay to go slow.", "Be gentle with yourself today.", "Finish one small thing first.", "Settle your heart.", "Be brave, but not reckless.", "Trust the power of your steps.", "Treat failure as feedback.", "Try to smile.", "Embrace uncertainty.", "Allow yourself to rest.", "Breathe first, then set off.", "Don't forget to hydrate.", "Speak your emotions.", "Stick to a rhythm you approve of.", "Go for a five-minute walk.", "Write down three things you are grateful for.", "You deserve to be treated well.", "You are good enough for today."],
@@ -244,20 +258,21 @@ function initializeGame() {
     },
     'ja': {
       ui_temp: '気温', ui_daily_reset: '毎日リセット', ui_lang: '言語', lang_symbol: '日',
-      btn_answer: '今日の答え', btn_answer_done: '回答済み', btn_draw_equip: '装備ガチャ', btn_draw_done: '本日抽選済み', btn_gear: '装備', btn_close: '閉じる', btn_pet: 'ペット', btn_backpack: 'バッグ', btn_prev_page: '前へ', btn_next_page: '次へ', btn_buy: '購入', btn_read: '読む', btn_name: '名前', btn_save: '保存',
+      btn_answer: '今日の答え', btn_answer_done: '回答済み', btn_draw_equip: '装備ガチャ', btn_draw_done: '本日抽選済み', btn_gear: '装備', btn_close: '閉じる', btn_pet: 'ペット', btn_backpack: 'バッグ', btn_prev_page: '前へ', btn_next_page: '次へ', btn_buy: '購入', btn_read: '読む', btn_name: '名前', btn_save: '保存', btn_use: '使う', btn_exit: '出る',
       gear_title: '装備', gear_subtitle: '（クリックで着脱）', btn_equip: '装備', btn_unequip: '外す',
       pet_title: 'ペット', pet_subtitle: '（クリックで召喚/隠す）', btn_summon: '召喚', btn_unsummon: '隠す',
       backpack_title: 'バッグ', backpack_subtitle: '（購入した本を読む）', backpack_empty: 'バッグは空です。',
       shop_title: '書店', shop_subtitle: '（私から知恵を買いませんか？）', btn_owned: '所有済み',
+      fashion_shop_title: 'ファッション店', fashion_shop_subtitle: '（いつもと違うスタイルはいかが？）',
       name_title: '名前を変更',
       type_head: '頭', type_eyes: '目', type_body: '体', type_legs: '脚',
       hint_welcome: 'あなたの小さな空間を探検しよう！',
-      hint_sit: 'テーブルに座っています... 矢印キーで離れます。',
-      hint_sleep: 'ベッドで休んでいます... 矢印キーで起きます。',
-      hint_read: '本を読んでいます... 矢印キーで止めます。',
+      hint_sit: 'テーブルに座っています... 「出る」ボタンで離れます。',
+      hint_sleep: 'ベッドで休んでいます... 「出る」ボタンで起きます。',
       hint_new_item: '新しい装備を手に入れた：<b>{itemName}</b>！',
       hint_all_items: 'おめでとう！すべての装備を集めました！',
       hint_buy_book: '{price}ゴールドで「{bookName}」を購入しました。',
+      hint_buy_fashion: '{price}ゴールドで「{itemName}」を購入しました！',
       hint_no_gold: 'ゴールドが足りません！',
       answer_title: '今日の答え',
       answer_A: ["あなたはもう道を進んでいます。", "視野を広く持ちましょう。", "ゆっくりで大丈夫です。", "今日は自分に優しく。", "まず小さなことを一つ終わらせて。", "心を落ち着かせて。", "勇敢に、でも無謀にならず。", "一歩の力を信じて。", "失敗をフィードバックと捉えて。", "少し微笑んでみて。", "不確かさを受け入れて。", "休むことを自分に許して。", "まず深呼吸、それから出発。", "水分補給を忘れずに。", "感情を言葉にして。", "自分が納得できるリズムを保って。", "5分間散歩に行きましょう。", "感謝することを3つ書き出して。", "あなたは優しくされる価値があります。", "今日のあなたは、それで十分です。"],
@@ -315,17 +330,18 @@ function initializeGame() {
       },
       library: {
           LIBRARIAN: { id: 'LIBRARIAN', x: 40, y: 50, w: 8, h: 16 },
-          LIBRARIAN_INTERACTION_ZONE: { id: 'LIBRARIAN_ZONE', x: 38, y: 48, w: 12, h: 20 },
-          DOOR: { id: 'DOOR_TO_ROOM', x: W/2 - 10, y: H - 10, w: 20, h: 10 },
-          BOOKSHELF: { id: 'BOOKSHELF', x: 130, y: 20, w: 80, h: 110 }
+          LIBRARIAN_INTERACTION_ZONE: { id: 'LIBRARIAN_ZONE', x: 35, y: 45, w: 18, h: 26 },
+          FASHION_NPC: { id: 'FASHION_NPC', x: 180, y: 60, w: 8, h: 16},
+          FASHION_NPC_INTERACTION_ZONE: { id: 'FASHION_NPC_ZONE', x: 175, y: 55, w: 18, h: 26},
+          DOOR: { id: 'DOOR_TO_ROOM', x: W/2 - 10, y: H - 10, w: 20, h: 10 }
       }
   };
 
   const player = {
     x: W/2, y: H/2, speed: 1.2, dir: 'down', state: 'idle', scene: 'room',
     name: '玩家',
-    lastInteractionObject: null,
-    interactionCooldown: 0,
+    interactionTarget: null,
+    isLocked: false,
     sceneTransitionCooldown: 0,
     equip:{ head: null, eyes: null, body: null, legs: null },
     unlockedItems: new Set(['sunglasses', 'suit', 'cap_white', 'shorts_red']),
@@ -359,7 +375,11 @@ function initializeGame() {
     {id:'cape_starlight', nameKey:'item_cape_starlight_name', descKey:'item_cape_starlight_desc', type:'body'},
     {id:'crown_royal', nameKey:'item_crown_royal_name', descKey:'item_crown_royal_desc', type:'head'},
     {id:'boots_rocket', nameKey:'item_boots_rocket_name', descKey:'item_boots_rocket_desc', type:'legs'},
+    {id:'helmet_galaxy', nameKey:'item_helmet_galaxy_name', descKey:'item_helmet_galaxy_desc', type:'head', price: 15, isSpecial: true},
+    {id:'jacket_flame', nameKey:'item_jacket_flame_name', descKey:'item_jacket_flame_desc', type:'body', price: 15, isSpecial: true},
+    {id:'boots_hover', nameKey:'item_boots_hover_name', descKey:'item_boots_hover_desc', type:'legs', price: 15, isSpecial: true},
   ];
+  const FASHION_ITEMS = ALL_EQUIPMENT.filter(item => item.isSpecial);
   const ALL_PETS = [{id: 'cat_blackwhite', nameKey: 'pet_cat_bw_name'}];
  
   const additionalTranslations = {
@@ -382,10 +402,9 @@ function initializeGame() {
         item_crown_royal_name: '皇家王冠', item_crown_royal_desc: '尊貴的象徵。',
         item_boots_rocket_name: '火箭靴', item_boots_rocket_desc: '感覺能飛起來！',
         pet_cat_bw_name: '黑白貓',
-        book_compass_name: '星辰追逐者的羅盤',
-        book_garden_name: '寧靜的心靈花園',
-        book_emotions_name: '情緒整理術',
-        book_mindfulness_name: '當下的力量',
+        item_helmet_galaxy_name: '銀河頭盔', item_helmet_galaxy_desc: '將星辰戴在頭上。',
+        item_jacket_flame_name: '烈焰夾克', item_jacket_flame_desc: '熱情如火的風格。',
+        item_boots_hover_name: '懸浮靴', item_boots_hover_desc: '離地三公分的時尚。',
     },
     'zh-CN': {
         item_sunglasses_name: '太阳眼镜', item_sunglasses_desc: '一副很酷的配件。',
@@ -406,10 +425,9 @@ function initializeGame() {
         item_crown_royal_name: '皇家王冠', item_crown_royal_desc: '尊贵的象征。',
         item_boots_rocket_name: '火箭靴', item_boots_rocket_desc: '感觉能飞起来！',
         pet_cat_bw_name: '黑白猫',
-        book_compass_name: '星辰追逐者的罗盘',
-        book_garden_name: '宁静的心灵花园',
-        book_emotions_name: '情绪整理术',
-        book_mindfulness_name: '当下的力量',
+        item_helmet_galaxy_name: '银河头盔', item_helmet_galaxy_desc: '将星辰戴在头上。',
+        item_jacket_flame_name: '烈焰夹克', item_jacket_flame_desc: '热情如火的风格。',
+        item_boots_hover_name: '悬浮靴', item_boots_hover_desc: '离地三公分的时尚。',
     },
     'en': {
         item_sunglasses_name: 'Sunglasses', item_sunglasses_desc: 'A pair of cool shades.',
@@ -430,10 +448,9 @@ function initializeGame() {
         item_crown_royal_name: 'Royal Crown', item_crown_royal_desc: 'A symbol of nobility.',
         item_boots_rocket_name: 'Rocket Boots', item_boots_rocket_desc: 'Feels like you could fly!',
         pet_cat_bw_name: 'Black & White Cat',
-        book_compass_name: 'The Star Chaser\'s Compass',
-        book_garden_name: 'The Serene Mind Garden',
-        book_emotions_name: 'The Art of Emotional Regulation',
-        book_mindfulness_name: 'The Power of Now',
+        item_helmet_galaxy_name: 'Galaxy Helmet', item_helmet_galaxy_desc: 'Wear the cosmos on your head.',
+        item_jacket_flame_name: 'Flame Jacket', item_jacket_flame_desc: 'A style as hot as fire.',
+        item_boots_hover_name: 'Hover Boots', item_boots_hover_desc: 'Fashion that\'s 3cm off the ground.',
     },
     'ja': {
         item_sunglasses_name: 'サングラス', item_sunglasses_desc: 'クールなアクセサリー。',
@@ -454,10 +471,9 @@ function initializeGame() {
         item_crown_royal_name: '王家の冠', item_crown_royal_desc: '高貴さの象徴。',
         item_boots_rocket_name: 'ロケットブーツ', item_boots_rocket_desc: '飛べそうな気がする！',
         pet_cat_bw_name: '白黒猫',
-        book_compass_name: '星を追う者の羅針盤',
-        book_garden_name: '静寂な心の庭',
-        book_emotions_name: '感情整理の術',
-        book_mindfulness_name: '「今」という力',
+        item_helmet_galaxy_name: 'ギャラクシーヘルメット', item_helmet_galaxy_desc: '星々を頭に纏う。',
+        item_jacket_flame_name: 'フレイムジャケット', item_jacket_flame_desc: '炎のように熱いスタイル。',
+        item_boots_hover_name: 'ホバーブーツ', item_boots_hover_desc: '地面から3cmのファッション。',
     }
   };
   Object.keys(additionalTranslations).forEach(lang => {
@@ -486,10 +502,10 @@ function initializeGame() {
       plotRect(px - 7, py - 2, 2, 2, '#f2d2b6');
       return;
     }
-    if (state === 'sitting' || state === 'reading') { py += 2; }
+    if (state === 'sitting') { py += 2; }
    
     const skin='#f2d2b6', hair='#3b2d20', shoes='#151a30', outline='#0b0e1c';
-    const capColors = {cap_white:'#f5f6fa', cap_red:'#e84118', cap_blue:'#3742fa', crown_royal: '#f1c40f'};
+    const capColors = {cap_white:'#f5f6fa', cap_red:'#e84118', cap_blue:'#3742fa', crown_royal: '#f1c40f', 'helmet_galaxy': '#4834d4'};
    
     let shirtColor = '#3c6fd8', pantsColor = '#2a3558';
     if(equip.body === 'suit') { shirtColor = '#2b3a67'; pantsColor = '#1f2847'; }
@@ -497,6 +513,7 @@ function initializeGame() {
     if(equip.body === 'shirt_jacket') shirtColor = '#4b6584';
     if(equip.body === 'shirt_hoodie') shirtColor = '#d1d8e0';
     if(equip.body === 'cape_starlight') { shirtColor = '#2c3e50'; }
+    if(equip.body === 'jacket_flame') { shirtColor = '#e67e22'; }
    
     if(equip.legs === 'shorts_red') pantsColor = '#e84118';
     if(equip.legs === 'pants_jeans') pantsColor = '#2c3e50';
@@ -507,11 +524,22 @@ function initializeGame() {
         plotRect(x-5, y+1, 10, 8, '#4834d4');
         for(let i=0; i<3; i++) plotRect(x-4+i*3, y+2+i, 1, 1, '#f1c40f');
     }
+     if(equip.body === 'jacket_flame'){
+        plotRect(x-3, y+3, 6, 2, '#f1c40f');
+        plotRect(x-2, y+5, 4, 1, '#e74c3c');
+    }
 
-    g.fillStyle = '#00000055'; g.fillRect(x-4, y+8, 8, 2);
+    g.fillStyle = '#00000055'; 
+    if (equip.legs !== 'boots_hover') {
+      g.fillRect(x-4, y+8, 8, 2);
+    }
 
     if (dir==='down'){
-      if(equip.head){ plotRect(x-4, y-8, 8, 4, capColors[equip.head]||'#fff'); if(equip.head==='crown_royal') { plotRect(x-2, y-9, 1,1,capColors.crown_royal); plotRect(x, y-9, 1,1,capColors.crown_royal); plotRect(x+2, y-9, 1,1,capColors.crown_royal); }} 
+      if(equip.head){ 
+        plotRect(x-4, y-8, 8, 4, capColors[equip.head]||'#fff'); 
+        if (equip.head === 'helmet_galaxy') plotRect(x-1, y-7, 2, 2, '#f1c40f');
+        if(equip.head==='crown_royal') { plotRect(x-2, y-9, 1,1,capColors.crown_royal); plotRect(x, y-9, 1,1,capColors.crown_royal); plotRect(x+2, y-9, 1,1,capColors.crown_royal); }
+      } 
       else { plotRect(x-3,y-7,6,2,hair); plotRect(x-4,y-5,8,2,hair); }
       plotRect(x-3,y-3,6,4,skin);
       if(equip.eyes === 'sunglasses') { plotRect(x-3,y-2,6,2,'#0c0f1e'); }
@@ -523,6 +551,7 @@ function initializeGame() {
       if(state === 'idle'){
           plotRect(x-3,y+5,2,3,pantsColor); plotRect(x+1,y+5,2,3,pantsColor);
           if (equip.legs === 'boots_rocket') { plotRect(x-3,y+8,2,2,'#7f8c8d'); plotRect(x+1,y+8,2,2,'#7f8c8d');} 
+          else if (equip.legs === 'boots_hover') { plotRect(x-3,y+7,2,2,'#3498db'); plotRect(x+1,y+7,2,2,'#3498db');}
           else { plotRect(x-3,y+8,2,1,shoes); plotRect(x+1,y+8,2,1,shoes); }
       }
     } else if (dir==='up'){
@@ -532,12 +561,13 @@ function initializeGame() {
       if(equip.body === 'suit'){ plotRect(x-3,y,1,5,outline); plotRect(x+2,y,1,5,outline); }
       if(state === 'idle'){
         plotRect(x-3,y+5,2,3,pantsColor); plotRect(x+1,y+5,2,3,pantsColor);
-        if (equip.legs === 'boots_rocket') { plotRect(x-3,y+8,2,2,'#7f8c8d'); plotRect(x+1,y+8,2,2,'#7f8c8d');} 
+        if (equip.legs === 'boots_rocket') { plotRect(x-3,y+8,2,2,'#7f8c8d'); plotRect(x+1,y+8,2,2,'#7f8c8d');}
+        else if (equip.legs === 'boots_hover') { plotRect(x-3,y+7,2,2,'#3498db'); plotRect(x+1,y+7,2,2,'#3498db');}
         else { plotRect(x-3,y+8,2,1,shoes); plotRect(x+1,y+8,2,1,shoes); }
       }
     } else if (dir==='left' || dir==='right'){
       const flip = dir==='left' ? -1 : 1;
-      if(equip.head){ plotRect(x-4, y-8, 8, 4, capColors[equip.head]||'#fff'); if(equip.head !== 'crown_royal') plotRect(x - (dir==='left' ? 4 : -1), y-5, 5*flip, 1, capColors[equip.head]||'#fff');} 
+      if(equip.head){ plotRect(x-4, y-8, 8, 4, capColors[equip.head]||'#fff'); if(equip.head !== 'crown_royal' && equip.head !== 'helmet_galaxy') plotRect(x - (dir==='left' ? 4 : -1), y-5, 5*flip, 1, capColors[equip.head]||'#fff');} 
       else { plotRect(x-3*flip,y-7,6*flip,2,hair); plotRect(x-4*flip,y-5,8*flip,2,hair); }
       plotRect(x-3*flip,y-3,6*flip,4,skin);
       if(equip.eyes === 'sunglasses') { plotRect(x-(dir==='left'?3:0), y-2, 3,2, '#0c0f1e'); }
@@ -549,11 +579,20 @@ function initializeGame() {
         plotRect(x-3*flip,y+5,2*flip,3,pantsColor); plotRect(x+(dir==='left'?1:-1),y+5,2,3,pantsColor);
         if (equip.legs === 'boots_rocket') { 
             plotRect(x-3*flip,y+8,2*flip,2,'#7f8c8d'); plotRect(x+(dir==='left'?1:-1),y+8,2,2,'#7f8c8d');
+        } else if (equip.legs === 'boots_hover') {
+            plotRect(x-3*flip,y+7,2*flip,2,'#3498db'); plotRect(x+(dir==='left'?1:-1),y+7,2,2,'#3498db');
         } else {
             plotRect(x-3*flip,y+8,2*flip,1,shoes); plotRect(x+(dir==='left'?1:-1),y+8,2,1,shoes);
         }
       }
     }
+  }
+
+  function drawFashionNpc(px, py) {
+    drawDude(px, py, 'down', {head: 'cap_red', eyes: 'sunglasses', body: 'jacket_flame'}, 'idle');
+    const x = Math.round(px), y = Math.round(py);
+    plotRect(x-3, y-7, 6, 2, '#9b59b6'); // Spiky hair
+    plotRect(x-4, y-5, 8, 2, '#9b59b6');
   }
 
   function plotRect(px,py,w,h,color,alpha=1){
@@ -615,13 +654,9 @@ function initializeGame() {
         ctx.fillStyle = '#d1d8e0'; ctx.fillRect(BED.x + 3, BED.y + 4, 10, 1);
         ctx.fillStyle = '#4d3a2d'; ctx.fillRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
     } else if (player.scene === 'library') {
-        const { LIBRARIAN, DOOR, BOOKSHELF } = SCENES.library;
+        const { LIBRARIAN, FASHION_NPC, DOOR } = SCENES.library;
         drawDude(LIBRARIAN.x, LIBRARIAN.y, 'down', { body: 'suit' }, 'idle');
-        
-        // Simplified bookshelf drawing
-        ctx.fillStyle = '#8c6d53';
-        ctx.fillRect(BOOKSHELF.x, BOOKSHELF.y, BOOKSHELF.w, BOOKSHELF.h);
-        
+        drawFashionNpc(FASHION_NPC.x, FASHION_NPC.y);
         ctx.fillStyle = '#4d3a2d'; ctx.fillRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
     }
   }
@@ -636,16 +671,6 @@ function initializeGame() {
       if (p.life <= 0) effects.splice(i, 1);
     });
     ctx.globalAlpha = 1;
-
-    if (eatingEffect.active) {
-      const bubbleW = 24, bubbleH = 18;
-      let bubbleX = player.x - bubbleW / 2, bubbleY = player.y - 28;
-      if (player.state === 'reading') { bubbleX = player.x; bubbleY = player.y - 20;}
-
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 8);
-      ctx.moveTo(bubbleX + bubbleW / 2 - 4, bubbleY + bubbleH); ctx.lineTo(bubbleX + bubbleW / 2, bubbleY + bubbleH + 5); ctx.lineTo(bubbleX + bubbleW / 2 + 4, bubbleY + bubbleH); ctx.fill();
-      ctx.font = '14px sans-serif'; ctx.fillText(player.state === 'reading' ? '📖' : '🍜', bubbleX + 4, bubbleY + 14);
-    }
   }
 
   /* =============================
@@ -667,38 +692,22 @@ function initializeGame() {
  
   function isColliding(a, b){ return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 
-  function checkInteractions(){
-      if (player.state !== 'idle' || player.interactionCooldown > 0) return;
+  function findInteraction() {
+      if (player.isLocked) return null;
       const p_hitbox = {x: player.x-4, y: player.y-8, w: 8, h: 16};
      
       if (player.scene === 'room') {
-        const { BED, CHAIR, DOOR } = SCENES.room;
-        if (isColliding(p_hitbox, CHAIR) && player.lastInteractionObject !== CHAIR) {
-            player.state = 'sitting'; player.x = CHAIR.x + CHAIR.w / 2; player.y = CHAIR.y; showHint(t('hint_sit'));
-            player.lastInteractionObject = CHAIR;
-        } else if (isColliding(p_hitbox, BED) && player.lastInteractionObject !== BED) {
-            player.state = 'sleeping'; player.x = BED.x + BED.w / 2 - 5; player.y = BED.y + BED.h / 2; showHint(t('hint_sleep'));
-            player.lastInteractionObject = BED;
-        } else if (isColliding(p_hitbox, DOOR) && player.sceneTransitionCooldown <= 0) {
-            player.scene = 'library'; player.x = SCENES.library.DOOR.x + SCENES.library.DOOR.w/2; player.y = SCENES.library.DOOR.y - 16;
-            player.sceneTransitionCooldown = 30;
-        }
+        const { BED, CHAIR } = SCENES.room;
+        if (isColliding(p_hitbox, { ...BED, x: BED.x-5, w: BED.w+10, y: BED.y-5, h: BED.h+10 })) return BED;
+        if (isColliding(p_hitbox, { ...CHAIR, x: CHAIR.x-5, w: CHAIR.w+10, y: CHAIR.y-5, h: CHAIR.h+10 })) return CHAIR;
       } else if (player.scene === 'library') {
-          const { DOOR, LIBRARIAN, BOOKSHELF, LIBRARIAN_INTERACTION_ZONE } = SCENES.library;
-          if (isColliding(p_hitbox, DOOR) && player.sceneTransitionCooldown <= 0) {
-              player.scene = 'room'; player.x = SCENES.room.DOOR.x + SCENES.room.DOOR.w/2; 
-              player.y = SCENES.room.DOOR.y + 26;
-              player.sceneTransitionCooldown = 30;
-          } else if (isColliding(p_hitbox, LIBRARIAN_INTERACTION_ZONE) && player.lastInteractionObject !== LIBRARIAN) {
-              togglePanel('shopSheet', true);
-              player.lastInteractionObject = LIBRARIAN;
-          } else if (isColliding(p_hitbox, BOOKSHELF) && player.lastInteractionObject !== BOOKSHELF) {
-              player.state = 'reading'; player.x = BOOKSHELF.x - 8; player.y = BOOKSHELF.y + BOOKSHELF.h/2; showHint(t('hint_read'));
-              player.lastInteractionObject = BOOKSHELF;
-          }
+          const { LIBRARIAN_INTERACTION_ZONE, FASHION_NPC_INTERACTION_ZONE } = SCENES.library;
+          if (isColliding(p_hitbox, LIBRARIAN_INTERACTION_ZONE)) return SCENES.library.LIBRARIAN;
+          if (isColliding(p_hitbox, FASHION_NPC_INTERACTION_ZONE)) return SCENES.library.FASHION_NPC;
       }
+      return null;
   }
-
+  
   function updatePet() {
       if (!pet.visible) return;
       pet.state_timer--;
@@ -734,78 +743,77 @@ function initializeGame() {
   }
 
   function step(){
-    if (player.interactionCooldown > 0) player.interactionCooldown--;
     if (player.sceneTransitionCooldown > 0) player.sceneTransitionCooldown--;
+    const p_hitbox = {x: player.x-4, y: player.y-8, w: 8, h: 16};
 
-    if (player.lastInteractionObject) {
-        const p_hitbox = {x: player.x-4, y: player.y-8, w: 8, h: 16};
-        
-        let effective_hitbox = player.lastInteractionObject;
-        if (player.lastInteractionObject.id === 'LIBRARIAN') {
-            effective_hitbox = SCENES.library.LIBRARIAN_INTERACTION_ZONE;
-        }
+    if (!player.isLocked) {
+      player.interactionTarget = findInteraction();
+      if (player.interactionTarget) {
+        useBtn.style.display = 'block';
+        const canvasRect = map.getBoundingClientRect();
+        useBtn.style.left = `${canvasRect.left + (player.x * (canvasRect.width/W)) - useBtn.offsetWidth/2}px`;
+        useBtn.style.top = `${canvasRect.top + ((player.y - 18) * (canvasRect.height/H)) - useBtn.offsetHeight}px`;
+      } else {
+        useBtn.style.display = 'none';
+      }
 
-        if (!isColliding(p_hitbox, effective_hitbox)) {
-            player.lastInteractionObject = null;
-        }
-    }
+      let dx=0, dy=0;
+      if (keys.has('ArrowUp')||hold.up) dy=-1; if (keys.has('ArrowDown')||hold.down) dy=1;
+      if (keys.has('ArrowLeft')||hold.left) dx=-1; if (keys.has('ArrowRight')||hold.right) dx=1;
+     
+      if (player.state === 'idle' && (dx || dy)) {
+          if(dx !== 0) player.dir = dx > 0 ? 'right' : 'left';
+          else if(dy !== 0) player.dir = dy > 0 ? 'down' : 'up';
+         
+          const len = Math.hypot(dx,dy)||1;
+          let nextX = player.x + (dx/len)*player.speed;
+          let nextY = player.y + (dy/len)*player.speed;
+  
+          if(player.scene === 'library') {
+              const { LIBRARIAN, FASHION_NPC } = SCENES.library;
+              if (isColliding({x: nextX-4, y: player.y-8, w:8, h:16}, LIBRARIAN) || isColliding({x: nextX-4, y: player.y-8, w:8, h:16}, FASHION_NPC)) {
+                  nextX = player.x;
+              }
+              if (isColliding({x: player.x-4, y: nextY-8, w:8, h:16}, LIBRARIAN) || isColliding({x: player.x-4, y: nextY-8, w:8, h:16}, FASHION_NPC)) {
+                  nextY = player.y;
+              }
+          }
+         
+          const { DOOR: roomDoor } = SCENES.room;
+          if (player.scene === 'room' && isColliding({x:nextX-4, y:nextY-8, w:8, h:16}, roomDoor)) {
+            player.scene = 'library'; player.x = SCENES.library.DOOR.x + SCENES.library.DOOR.w/2; player.y = SCENES.library.DOOR.y - 16;
+            player.sceneTransitionCooldown = 30;
+          }
 
-    let dx=0, dy=0;
-    if (keys.has('ArrowUp')||hold.up) dy=-1; if (keys.has('ArrowDown')||hold.down) dy=1;
-    if (keys.has('ArrowLeft')||hold.left) dx=-1; if (keys.has('ArrowRight')||hold.right) dx=1;
-   
-    if (player.state !== 'idle' && (dx || dy)) {
-        const lastState = player.state;
-        player.state = 'idle';
-        player.interactionCooldown = 15;
-        if (lastState === 'sitting') { player.y = SCENES.room.CHAIR.y + SCENES.room.CHAIR.h + 8; player.dir = 'down'; } 
-        else if (lastState === 'sleeping') { player.y = SCENES.room.BED.y + SCENES.room.BED.h + 8; player.dir = 'down'; }
-        else if (lastState === 'reading') { player.y += 8; player.dir = 'right'; }
-    } else if (player.state === 'idle' && (dx || dy)) {
-        if(dx !== 0) player.dir = dx > 0 ? 'right' : 'left';
-        else if(dy !== 0) player.dir = dy > 0 ? 'down' : 'up';
-       
-        const len = Math.hypot(dx,dy)||1;
-        let nextX = player.x + (dx/len)*player.speed;
-        let nextY = player.y + (dy/len)*player.speed;
+          const { DOOR: libDoor } = SCENES.library;
+          if (player.scene === 'library' && isColliding({x:nextX-4, y:nextY-8, w:8, h:16}, libDoor)) {
+            player.scene = 'room'; player.x = SCENES.room.DOOR.x + SCENES.room.DOOR.w/2; player.y = SCENES.room.DOOR.y + 26;
+            player.sceneTransitionCooldown = 30;
+          }
 
-        if(player.scene === 'library') {
-            const npc_hitbox = SCENES.library.LIBRARIAN;
-            if (isColliding({x: nextX-4, y: player.y-8, w:8, h:16}, npc_hitbox)) {
-                nextX = player.x;
-            }
-            if (isColliding({x: player.x-4, y: nextY-8, w:8, h:16}, npc_hitbox)) {
-                nextY = player.y;
-            }
-        }
-       
-        player.x = Math.max(8, Math.min(W-8, nextX));
-        player.y = Math.max(16, Math.min(H-8, nextY));
-        player.movedSinceLastSave = true;
-        checkInteractions();
-    }
-   
-    const p_hitbox = {x: player.x-4, y: player.y-4, w: 8, h: 8};
-    const pet_hitbox = {x: pet.x-4, y: pet.y-4, w: 8, h: 8};
-    if (pet.visible && player.scene === 'room' && isColliding(p_hitbox, pet_hitbox)) {
-        player.x -= (dx||0) * 1.5;
-        player.y -= (dy||0) * 1.5;
-        pet.state = 'sitting';
-        pet.state_timer = 60; 
-        pet.love_timer = 60;
+          player.x = Math.max(8, Math.min(W-8, nextX));
+          player.y = Math.max(16, Math.min(H-8, nextY));
+          player.movedSinceLastSave = true;
+      }
+     
+      const pet_hitbox = {x: pet.x-4, y: pet.y-4, w: 8, h: 8};
+      if (pet.visible && player.scene === 'room' && isColliding(p_hitbox, pet_hitbox)) {
+          player.x -= (dx||0) * 1.5;
+          player.y -= (dy||0) * 1.5;
+          pet.state = 'sitting';
+          pet.state_timer = 60; 
+          pet.love_timer = 60;
+      }
+    } else { // if player isLocked
+      const canvasRect = map.getBoundingClientRect();
+      exitBtn.style.left = `${canvasRect.left + (player.x * (canvasRect.width/W)) - exitBtn.offsetWidth/2}px`;
+      exitBtn.style.top = `${canvasRect.top + ((player.y - 18) * (canvasRect.height/H)) - exitBtn.offsetHeight}px`;
     }
 
     if (player.state === 'sleeping' && Math.random() < 0.05) {
       effects.push({ text: Math.random() < 0.5 ? 'z' : 'Z', x: player.x + 8, y: player.y - 2, vx: Math.random() * 0.2 - 0.1, vy: -0.2, life: 80, maxLife: 80, size: Math.random() * 4 + 8 });
     }
-    eatingEffect.timer--;
-    if ((player.state === 'sitting' || player.state === 'reading') && eatingEffect.timer <= 0) {
-      eatingEffect.active = !eatingEffect.active;
-      eatingEffect.timer = eatingEffect.duration;
-    } else if (player.state !== 'sitting' && player.state !== 'reading') {
-      eatingEffect.active = false;
-    }
-
+    
     if(player.scene === 'room') updatePet();
    
     ctx.imageSmoothingEnabled = false;
@@ -835,13 +843,13 @@ function initializeGame() {
   function saveState(){
     try {
       const state = { x: player.x, y: player.y, equip: player.equip, unlockedItems: [...player.unlockedItems], inventory: [...player.inventory], gold: player.gold, scene: player.scene, lang: currentLang, name: player.name };
-      localStorage.setItem('book-rpg-state-v6', JSON.stringify(state));
+      localStorage.setItem('book-rpg-state-v7', JSON.stringify(state));
     } catch(e) { console.warn("無法儲存狀態:", e); }
   }
 
   function loadState(){
     try {
-      const savedState = localStorage.getItem('book-rpg-state-v6');
+      const savedState = localStorage.getItem('book-rpg-state-v7');
       if (savedState) {
         const state = JSON.parse(savedState);
         if (state.name) player.name = state.name;
@@ -850,7 +858,7 @@ function initializeGame() {
         player.unlockedItems = new Set(state.unlockedItems);
         player.inventory = new Set(state.inventory);
       }
-    } catch(e) { console.warn("無法讀取狀態:", e); localStorage.removeItem('book-rpg-state-v6'); }
+    } catch(e) { console.warn("無法讀取狀態:", e); localStorage.removeItem('book-rpg-state-v7'); }
   }
 
   /* =============================
@@ -918,7 +926,7 @@ function initializeGame() {
   function onDrawEquipBtnClick() {
     const key = todayKey(); if (localStorage.getItem('daily.equipDrawnAt') === key) return;
     localStorage.setItem('daily.equipDrawnAt', key);
-    const unlockable = ALL_EQUIPMENT.filter(item => !player.unlockedItems.has(item.id));
+    const unlockable = ALL_EQUIPMENT.filter(item => !player.unlockedItems.has(item.id) && !item.isSpecial);
     if(unlockable.length === 0){ showHint(t('hint_all_items')); updateDailyStatus(); return; }
    
     const newItem = unlockable[Math.floor(Math.random() * unlockable.length)];
@@ -955,6 +963,7 @@ function initializeGame() {
       if ($('#petSheet').classList.contains('open')) renderPetSheet();
       if ($('#backpackSheet').classList.contains('open')) renderBackpackSheet();
       if ($('#shopSheet').classList.contains('open')) renderShopSheet();
+      if ($('#fashionShopSheet').classList.contains('open')) renderFashionShopSheet();
   }
 
   function renderGearSheet() {
@@ -995,6 +1004,14 @@ function initializeGame() {
           grid.innerHTML += `<div class="item"><div><b>${t(book.nameKey)}</b></div><div class="small">${owned ? '' : `${t('btn_buy')} 💰${book.price}`}</div></div><button data-book-id="${book.id}" ${owned ? 'disabled' : ''}>${owned ? t('btn_owned') : t('btn_buy')}</button>`;
       });
   }
+
+  function renderFashionShopSheet() {
+      const grid = $('#fashionShopGrid'); grid.innerHTML = '';
+      FASHION_ITEMS.forEach(item => {
+          const owned = player.unlockedItems.has(item.id);
+          grid.innerHTML += `<div class="item"><div><b>${t(item.nameKey)}</b></div><div class="small">${owned ? '' : `${t('btn_buy')} 💰${item.price}`}</div></div><button data-item-id="${item.id}" ${owned ? 'disabled' : ''}>${owned ? t('btn_owned') : t('btn_buy')}</button>`;
+      });
+  }
  
   $('#gearGrid').addEventListener('click', e => {
     const btn = e.target.closest('button[data-equip-id]'); if (!btn) return;
@@ -1029,6 +1046,23 @@ function initializeGame() {
           updateDailyStatus();
           renderShopSheet();
           showHint(t('hint_buy_book', {price: book.price, bookName: t(book.nameKey)}));
+      } else {
+          showHint(t('hint_no_gold'));
+      }
+  });
+  
+  $('#fashionShopGrid').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-item-id]'); if (!btn) return;
+      const item = FASHION_ITEMS.find(i => i.id === btn.dataset.itemId);
+      if (!item || player.unlockedItems.has(item.id)) return;
+
+      if (player.gold >= item.price) {
+          player.gold -= item.price;
+          player.unlockedItems.add(item.id);
+          saveState();
+          updateDailyStatus();
+          renderFashionShopSheet();
+          showHint(t('hint_buy_fashion', {price: item.price, itemName: t(item.nameKey)}));
       } else {
           showHint(t('hint_no_gold'));
       }
@@ -1112,6 +1146,49 @@ function initializeGame() {
         showHint(`<b>${t('answer_title')}：</b>${s}`);
     }
   });
+  
+  useBtn.addEventListener('click', () => {
+    if (!player.interactionTarget) return;
+    
+    player.isLocked = true;
+    useBtn.style.display = 'none';
+    exitBtn.style.display = 'block';
+
+    const targetId = player.interactionTarget.id;
+    if (targetId === 'BED') {
+        player.state = 'sleeping';
+        player.x = SCENES.room.BED.x + SCENES.room.BED.w / 2 - 5;
+        player.y = SCENES.room.BED.y + SCENES.room.BED.h / 2;
+        showHint(t('hint_sleep'));
+    } else if (targetId === 'CHAIR') {
+        player.state = 'sitting';
+        player.x = SCENES.room.CHAIR.x + SCENES.room.CHAIR.w / 2;
+        player.y = SCENES.room.CHAIR.y;
+        showHint(t('hint_sit'));
+    } else if (targetId === 'LIBRARIAN') {
+        togglePanel('shopSheet', true);
+        player.isLocked = false; 
+        exitBtn.style.display = 'none';
+    } else if (targetId === 'FASHION_NPC') {
+        togglePanel('fashionShopSheet', true);
+        player.isLocked = false; 
+        exitBtn.style.display = 'none';
+    }
+  });
+
+  exitBtn.addEventListener('click', () => {
+      player.isLocked = false;
+      exitBtn.style.display = 'none';
+      
+      const lastState = player.state;
+      player.state = 'idle';
+      if (lastState === 'sitting') { 
+          player.y = SCENES.room.CHAIR.y + SCENES.room.CHAIR.h + 20; player.dir = 'down'; 
+      } else if (lastState === 'sleeping') { 
+          player.y = SCENES.room.BED.y + SCENES.room.BED.h + 20; player.dir = 'down'; 
+      }
+      player.interactionTarget = null;
+  });
 
   function fitCanvas(){
     const r = stage.getBoundingClientRect();
@@ -1121,6 +1198,10 @@ function initializeGame() {
   }
   new ResizeObserver(fitCanvas).observe(stage);
   fitCanvas();
+  window.addEventListener('resize', () => {
+    useBtn.style.display = 'none';
+    exitBtn.style.display = 'none';
+  });
 
   dpad.style.display = isTouch ? 'block':'none';
 
