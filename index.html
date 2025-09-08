@@ -38,7 +38,9 @@
   .dpad .down{left:52px;bottom:0}
   .dpad .left{left:0;top:52px}
   .dpad .right{right:0;top:52px}
-  .hud-btn{position:absolute;display:none;pointer-events:auto;z-index:5;padding:8px 12px;font-size:12px;min-width:60px;text-align:center;}
+  .interaction-buttons{position:absolute;bottom:180px;left:50%;transform:translateX(-50%);z-index:5;pointer-events:auto;display:none;gap:10px;}
+  .interaction-buttons.visible{display:flex;}
+  .hud-btn{padding:8px 12px;font-size:12px;min-width:60px;text-align:center;}
   /* 通用面板 */
   .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid #2a335f;padding:14px 12px;border-top-left-radius:16px;border-top-right-radius:16px;box-shadow:0 -10px 40px #0008;transform:translateY(110%);transition:transform .25s ease;z-index:10; max-height: 60vh; overflow-y: auto;}
   .sheet.open{transform:translateY(0)}
@@ -60,6 +62,7 @@
     .bottombar{gap:8px; justify-content: center;}
     button{padding:10px 10px; font-size: 14px;}
     .msg{max-height:66px;min-width:100%; order: 1;}
+    .interaction-buttons{bottom: 170px;}
   }
 </style>
 </head>
@@ -84,8 +87,10 @@
         <button class="left" data-dir="left">◀</button>
         <button class="right"data-dir="right">▶</button>
       </div>
-      <button id="useBtn" class="hud-btn" data-lang="btn_use">使用</button>
-      <button id="exitBtn" class="hud-btn btn-warn" data-lang="btn_exit">離開</button>
+      <div id="interaction-buttons-container" class="interaction-buttons">
+        <button id="useBtn" class="hud-btn" data-lang="btn_use" style="display:none;">使用</button>
+        <button id="exitBtn" class="hud-btn btn-warn" data-lang="btn_exit" style="display:none;">離開</button>
+      </div>
     </div>
   </div>
 
@@ -97,6 +102,7 @@
     <button id="petBtn" class="btn-secondary" data-lang="btn_pet">寵物</button>
     <button id="backpackBtn" class="btn-secondary" data-lang="btn_backpack">背包</button>
     <button id="gearBtn" class="btn-secondary" data-lang="btn_gear">裝備</button>
+    <button id="musicBtn" class="btn-secondary">🎵</button>
     <div class="msg" id="msgBox"><div class="muted" data-lang="hint_welcome">探索你的小空間吧！</div></div>
   </div>
 </div>
@@ -175,6 +181,7 @@ function initializeGame() {
   const $ = sel => document.querySelector(sel);
   const map = $('#map'), ctx = map.getContext('2d');
   const stage = $('#stage'), msgBox = $('#msgBox'), dpad = $('#dpad');
+  const interactionBtnContainer = $('#interaction-buttons-container');
   const useBtn = $('#useBtn'), exitBtn = $('#exitBtn');
   const isTouch = matchMedia('(pointer:coarse)').matches;
   let isDay = true;
@@ -769,12 +776,11 @@ function initializeGame() {
     if (!player.isLocked) {
       player.interactionTarget = findInteraction();
       if (player.interactionTarget) {
+        interactionBtnContainer.classList.add('visible');
         useBtn.style.display = 'block';
-        const canvasRect = map.getBoundingClientRect();
-        useBtn.style.left = `${canvasRect.left + (player.x * (canvasRect.width/W)) - useBtn.offsetWidth/2}px`;
-        useBtn.style.top = `${canvasRect.top + ((player.y - 18) * (canvasRect.height/H)) - useBtn.offsetHeight}px`;
+        exitBtn.style.display = 'none';
       } else {
-        useBtn.style.display = 'none';
+        interactionBtnContainer.classList.remove('visible');
       }
 
       let dx=0, dy=0;
@@ -825,9 +831,9 @@ function initializeGame() {
           pet.love_timer = 60;
       }
     } else { // if player isLocked
-      const canvasRect = map.getBoundingClientRect();
-      exitBtn.style.left = `${canvasRect.left + (player.x * (canvasRect.width/W)) - exitBtn.offsetWidth/2}px`;
-      exitBtn.style.top = `${canvasRect.top + ((player.y - 18) * (canvasRect.height/H)) - exitBtn.offsetHeight}px`;
+        interactionBtnContainer.classList.add('visible');
+        useBtn.style.display = 'none';
+        exitBtn.style.display = 'block';
     }
 
     if (player.state === 'sleeping' && Math.random() < 0.05) {
@@ -1152,6 +1158,65 @@ function initializeGame() {
   })();
 
   /* =============================
+     BGM 背景音樂
+  ============================= */
+  let audioCtx;
+  let isMusicPlaying = false;
+  let musicTimeout;
+  let currentNote = 0;
+  const NOTE_FREQ = { 'C4':261.63,'D4':293.66,'E4':329.63,'F4':349.23,'G4':392.00,'A4':440.00,'B4':493.88,'C5':523.25,'rest':0 };
+  const BGM = [
+      {note:'E4', dur:0.2}, {note:'G4', dur:0.2}, {note:'B4', dur:0.2}, {note:'C5', dur:0.4},
+      {note:'D4', dur:0.2}, {note:'G4', dur:0.2}, {note:'B4', dur:0.6}, {note:'rest', dur:0.2},
+      {note:'C4', dur:0.2}, {note:'E4', dur:0.2}, {note:'A4', dur:0.2}, {note:'B4', dur:0.4},
+      {note:'D4', dur:0.2}, {note:'E4', dur:0.2}, {note:'G4', dur:0.6}, {note:'rest', dur:0.2},
+  ];
+
+  function playNote(freq, dur) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      const now = audioCtx.currentTime;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
+      gain.gain.linearRampToValueAtTime(0, now + dur - 0.02);
+      osc.start(now);
+      osc.stop(now + dur);
+  }
+
+  function scheduleNextNote() {
+      if (!isMusicPlaying) return;
+      const note = BGM[currentNote];
+      playNote(NOTE_FREQ[note.note], note.dur);
+      currentNote = (currentNote + 1) % BGM.length;
+      musicTimeout = setTimeout(scheduleNextNote, note.dur * 1000);
+  }
+
+  function toggleMusic() {
+      if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+      }
+      isMusicPlaying = !isMusicPlaying;
+      const musicBtn = $('#musicBtn');
+      if (isMusicPlaying) {
+          currentNote = 0;
+          scheduleNextNote();
+          musicBtn.style.borderColor = 'var(--accent)';
+      } else {
+          clearTimeout(musicTimeout);
+          musicBtn.style.borderColor = '#3a467c';
+      }
+  }
+
+
+  /* =============================
      啟動
   ============================= */
    
@@ -1177,6 +1242,7 @@ function initializeGame() {
     if (!player.interactionTarget) return;
     
     player.isLocked = true;
+    interactionBtnContainer.classList.add('visible');
     useBtn.style.display = 'none';
     exitBtn.style.display = 'block';
 
@@ -1195,15 +1261,18 @@ function initializeGame() {
         togglePanel('shopSheet', true);
         player.isLocked = false; 
         exitBtn.style.display = 'none';
+        interactionBtnContainer.classList.remove('visible');
     } else if (targetId === 'FASHION_NPC') {
         togglePanel('fashionShopSheet', true);
         player.isLocked = false; 
         exitBtn.style.display = 'none';
+        interactionBtnContainer.classList.remove('visible');
     }
   });
 
   exitBtn.addEventListener('click', () => {
       player.isLocked = false;
+      interactionBtnContainer.classList.remove('visible');
       exitBtn.style.display = 'none';
       
       const lastState = player.state;
@@ -1225,8 +1294,7 @@ function initializeGame() {
   new ResizeObserver(fitCanvas).observe(stage);
   fitCanvas();
   window.addEventListener('resize', () => {
-    useBtn.style.display = 'none';
-    exitBtn.style.display = 'none';
+    interactionBtnContainer.classList.remove('visible');
   });
 
   dpad.style.display = isTouch ? 'block':'none';
@@ -1248,6 +1316,7 @@ function initializeGame() {
   $('#backpackBtn').addEventListener('click', () => togglePanel('backpackSheet'));
   $('#gearBtn').addEventListener('click', () => togglePanel('gearSheet'));
   $('#nameBtn').addEventListener('click', () => togglePanel('nameSheet'));
+  $('#musicBtn').addEventListener('click', toggleMusic);
   
   $('#saveNameBtn').addEventListener('click', () => {
     const newName = $('#nameInput').value.trim();
