@@ -156,7 +156,8 @@
 
 <script src="books.js"></script>
 <script>
-window.addEventListener('DOMContentLoaded', () => {
+// Wrap entire game logic in a function to be called after books.js is loaded
+function initializeGame() {
   /* =============================
      環境與工具
   ============================= */
@@ -272,6 +273,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if (!key) return '';
       const langPack = LANG_STRINGS[currentLang] || LANG_STRINGS['zh-TW'];
       let str = langPack[key] || key;
+      if (str === key && BOOK_CONTENT[currentLang] && BOOK_CONTENT[currentLang][key]) {
+        str = BOOK_CONTENT[currentLang][key];
+      }
       for (const p in params) {
           str = str.replace(`{${p}}`, params[p]);
       }
@@ -311,6 +315,7 @@ window.addEventListener('DOMContentLoaded', () => {
       },
       library: {
           LIBRARIAN: { id: 'LIBRARIAN', x: 40, y: 50, w: 8, h: 16 },
+          LIBRARIAN_INTERACTION_ZONE: { id: 'LIBRARIAN_ZONE', x: 38, y: 48, w: 12, h: 20 },
           DOOR: { id: 'DOOR_TO_ROOM', x: W/2 - 10, y: H - 10, w: 20, h: 10 },
           BOOKSHELF: { id: 'BOOKSHELF', x: 130, y: 20, w: 80, h: 110 }
       }
@@ -320,6 +325,7 @@ window.addEventListener('DOMContentLoaded', () => {
     x: W/2, y: H/2, speed: 1.2, dir: 'down', state: 'idle', scene: 'room',
     name: '玩家',
     lastInteractionObject: null,
+    interactionCooldown: 0,
     sceneTransitionCooldown: 0,
     equip:{ head: null, eyes: null, body: null, legs: null },
     unlockedItems: new Set(['sunglasses', 'suit', 'cap_white', 'shorts_red']),
@@ -612,17 +618,9 @@ window.addEventListener('DOMContentLoaded', () => {
         const { LIBRARIAN, DOOR, BOOKSHELF } = SCENES.library;
         drawDude(LIBRARIAN.x, LIBRARIAN.y, 'down', { body: 'suit' }, 'idle');
         
+        // Simplified bookshelf drawing
         ctx.fillStyle = '#8c6d53';
         ctx.fillRect(BOOKSHELF.x, BOOKSHELF.y, BOOKSHELF.w, BOOKSHELF.h);
-        const bookColors = ['#a0522d', '#5f4c3a', '#2e8b57', '#4682b4', '#b22222', '#663399'];
-        for (let y = BOOKSHELF.y + 5; y < BOOKSHELF.y + BOOKSHELF.h - 5; y += 12) {
-            for (let x = BOOKSHELF.x + 5; x < BOOKSHELF.x + BOOKSHELF.w - 8; ) {
-                const bookWidth = Math.floor(Math.random() * 4 + 3);
-                ctx.fillStyle = bookColors[Math.floor(Math.random() * bookColors.length)];
-                ctx.fillRect(x, y, bookWidth, 10);
-                x += bookWidth + 2;
-            }
-        }
         
         ctx.fillStyle = '#4d3a2d'; ctx.fillRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
     }
@@ -670,7 +668,7 @@ window.addEventListener('DOMContentLoaded', () => {
   function isColliding(a, b){ return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 
   function checkInteractions(){
-      if (player.state !== 'idle') return;
+      if (player.state !== 'idle' || player.interactionCooldown > 0) return;
       const p_hitbox = {x: player.x-4, y: player.y-8, w: 8, h: 16};
      
       if (player.scene === 'room') {
@@ -686,12 +684,12 @@ window.addEventListener('DOMContentLoaded', () => {
             player.sceneTransitionCooldown = 30;
         }
       } else if (player.scene === 'library') {
-          const { DOOR, LIBRARIAN, BOOKSHELF } = SCENES.library;
+          const { DOOR, LIBRARIAN, BOOKSHELF, LIBRARIAN_INTERACTION_ZONE } = SCENES.library;
           if (isColliding(p_hitbox, DOOR) && player.sceneTransitionCooldown <= 0) {
               player.scene = 'room'; player.x = SCENES.room.DOOR.x + SCENES.room.DOOR.w/2; 
               player.y = SCENES.room.DOOR.y + 26;
               player.sceneTransitionCooldown = 30;
-          } else if (isColliding(p_hitbox, LIBRARIAN) && player.lastInteractionObject !== LIBRARIAN) {
+          } else if (isColliding(p_hitbox, LIBRARIAN_INTERACTION_ZONE) && player.lastInteractionObject !== LIBRARIAN) {
               togglePanel('shopSheet', true);
               player.lastInteractionObject = LIBRARIAN;
           } else if (isColliding(p_hitbox, BOOKSHELF) && player.lastInteractionObject !== BOOKSHELF) {
@@ -736,11 +734,18 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   function step(){
+    if (player.interactionCooldown > 0) player.interactionCooldown--;
     if (player.sceneTransitionCooldown > 0) player.sceneTransitionCooldown--;
 
     if (player.lastInteractionObject) {
         const p_hitbox = {x: player.x-4, y: player.y-8, w: 8, h: 16};
-        if (!isColliding(p_hitbox, player.lastInteractionObject)) {
+        
+        let effective_hitbox = player.lastInteractionObject;
+        if (player.lastInteractionObject.id === 'LIBRARIAN') {
+            effective_hitbox = SCENES.library.LIBRARIAN_INTERACTION_ZONE;
+        }
+
+        if (!isColliding(p_hitbox, effective_hitbox)) {
             player.lastInteractionObject = null;
         }
     }
@@ -752,6 +757,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (player.state !== 'idle' && (dx || dy)) {
         const lastState = player.state;
         player.state = 'idle';
+        player.interactionCooldown = 15;
         if (lastState === 'sitting') { player.y = SCENES.room.CHAIR.y + SCENES.room.CHAIR.h + 8; player.dir = 'down'; } 
         else if (lastState === 'sleeping') { player.y = SCENES.room.BED.y + SCENES.room.BED.h + 8; player.dir = 'down'; }
         else if (lastState === 'reading') { player.y += 8; player.dir = 'right'; }
@@ -1044,7 +1050,7 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderPage() {
-      const content = BOOK_CONTENT[currentLang][currentBook.contentKey];
+      const content = t(currentBook.contentKey);
       const totalPages = Math.ceil(content.length / charsPerPage);
       const start = currentPage * charsPerPage;
       const end = start + charsPerPage;
@@ -1057,7 +1063,7 @@ window.addEventListener('DOMContentLoaded', () => {
  
   $('#prevPageBtn').addEventListener('click', () => { if(currentPage > 0) { currentPage--; renderPage(); }});
   $('#nextPageBtn').addEventListener('click', () => { 
-      const content = BOOK_CONTENT[currentLang][currentBook.contentKey];
+      const content = t(currentBook.contentKey);
       const totalPages = Math.ceil(content.length / charsPerPage);
       if (currentPage < totalPages - 1) { currentPage++; renderPage(); }
   });
@@ -1088,6 +1094,7 @@ window.addEventListener('DOMContentLoaded', () => {
   /* =============================
      啟動
   ============================= */
+   
   loadState();
   setLanguage(player.lang || 'zh-TW');
   setInterval(updateCountdown, 1000);
@@ -1143,7 +1150,16 @@ window.addEventListener('DOMContentLoaded', () => {
         togglePanel('nameSheet', false);
     }
   });
-});
+}
+
+// Check if books.js is loaded, then start the game
+if (typeof ALL_BOOKS !== 'undefined' && typeof BOOK_CONTENT !== 'undefined') {
+  initializeGame();
+} else {
+  // Fallback in case the script loading has a delay
+  window.addEventListener('load', initializeGame);
+}
+
 </script>
 </body>
 </html>
