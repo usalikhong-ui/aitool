@@ -1,1342 +1,422 @@
-<!doctype html>
-<html lang="zh-Hant">
+```html
+<!DOCTYPE html>
+<html lang="zh-HK">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>答案之書 RPG（點陣版）</title>
-<style>
-  :root{
-    --bg:#0f1220; --panel:#1b2140; --text:#e8eeff; --accent:#86a5ff; --muted:#a8b2d1;
-    --btn:#2a3560; --btn2:#364276; --ok:#3ea86a; --warn:#e6b450; --coin: #f1c40f;
-  }
-  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"PingFang TC","Noto Sans TC",sans-serif;touch-action:none;}
-  #gameWrap{position:fixed;inset:0;display:flex;flex-direction:column;}
-  /* 頂部資訊條 */
-  .topbar{height:44px;display:flex;align-items:center;gap:10px;padding:0 10px;background:linear-gradient(#121736,#0f142f);border-bottom:1px solid #1c2447}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:#151b36;color:var(--muted);font-size:12px}
-  .pill b{color:var(--text);font-weight:600}
-  .icon{width:14px;height:14px;display:inline-block}
-  /* 畫布區 */
-  #stage{flex:1;position:relative;overflow:hidden}
-  canvas#map{position:absolute;inset:0;margin:auto;image-rendering:pixelated;background:linear-gradient(#1a1f39,#13182b)}
-  /* 底部面板 */
-  .bottombar{min-height:80px;padding:10px;background:linear-gradient(#0e142e,#0c1124);border-top:1px solid #1c2447;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  button{background:var(--btn);border:1px solid #3a467c;color:var(--text);padding:10px 14px;border-radius:10px;font-size:15px;cursor:pointer;}
-  button:active{transform:translateY(1px)}
-  button:disabled{background:#1e2648;color:var(--muted);cursor:not-allowed;transform:none;}
-  .btn-ok{background:var(--ok);border-color:#409e6a}
-  .btn-secondary{background:var(--btn2)}
-  .btn-warn{background:var(--warn); border-color:#c89f41;}
-  /* 訊息窗 */
-  .msg{flex:1;min-width:180px;background:var(--panel);border:1px solid #2a335f;border-radius:12px;padding:10px;font-size:14px;max-height:72px;overflow:auto}
-  .muted{color:var(--muted);font-size:12px}
-  /* 行動裝置虛擬方向鍵 */
-  .hud{position:absolute;inset:0;pointer-events:none}
-  .dpad{position:absolute;left:12px;bottom:12px;width:160px;height:160px;pointer-events:auto;touch-action:none}
-  .dpad button{position:absolute;width:56px;height:56px;border-radius:12px;background:#222c55;border:1px solid #304078}
-  .dpad .up{left:52px;top:0}
-  .dpad .down{left:52px;bottom:0}
-  .dpad .left{left:0;top:52px}
-  .dpad .right{right:0;top:52px}
-  .interaction-buttons{position:absolute;bottom:180px;left:50%;transform:translateX(-50%);z-index:5;pointer-events:auto;display:none;gap:10px;}
-  .interaction-buttons.visible{display:flex;}
-  .hud-btn{padding:8px 12px;font-size:12px;min-width:60px;text-align:center;}
-  /* 通用面板 */
-  .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid #2a335f;padding:14px 12px;border-top-left-radius:16px;border-top-right-radius:16px;box-shadow:0 -10px 40px #0008;transform:translateY(110%);transition:transform .25s ease;z-index:10; max-height: 60vh; overflow-y: auto;}
-  .sheet.open{transform:translateY(0)}
-  .grid{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
-  .item{padding:10px;border:1px solid #334074;border-radius:12px}
-  .badge{font-size:12px;padding:2px 8px;border-radius:999px;background:#22305f;color:#aecdff}
-  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .small{font-size:12px;color:var(--muted)}
-  /* 書本閱讀器 */
-  #bookReader{position:fixed;inset:10px;background:var(--panel);border-radius:16px;z-index:20;padding:20px;display:none;flex-direction:column;border:1px solid #2a335f;}
-  #bookReader.open{display:flex;}
-  #bookTitle{font-size:1.2em;font-weight:bold;margin-bottom:10px;color:var(--accent);}
-  #bookContent{flex:1;overflow:auto;font-size:15px;line-height:1.7;white-space:pre-wrap;padding-right:10px;}
-  #bookNav{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
-  #pageIndicator{font-size:14px;}
-
-  /* 小螢幕優化 */
-  @media (max-width:520px){
-    .bottombar{gap:8px; justify-content: center;}
-    button{padding:10px 10px; font-size: 14px;}
-    .msg{max-height:66px;min-width:100%; order: 1;}
-    .interaction-buttons{bottom: 170px;}
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>緊急救護程序溫習手冊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .section-card {
+            background: white;
+            border-radius: 0.75 m;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+        }
+        .sticky-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+        }
+        .protocol-tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .bg-danger { background-color: #fee2e2; color: #991b1b; }
+        .bg-warning { background-color: #fef3c7; color: #92400e; }
+        .bg-success { background-color: #d1fae5; color: #065f46; }
+        .bg-info { background-color: #dbeafe; color: #1e40af; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #e5e7eb; padding: 0.75rem; text-align: left; }
+        th { background-color: #f9fafb; font-weight: 600; }
+        
+        @media (max-width: 640px) {
+            .table-container { overflow-x: auto; }
+        }
+    </style>
 </head>
-<body>
-<div id="gameWrap">
-  <!-- 頂部資訊 -->
-  <div class="topbar">
-    <span class="pill" id="timePill"><span class="icon" id="dayIcon"></span><b id="clock">--:--</b></span>
-    <span class="pill" id="tempPill"><span data-lang="ui_temp">氣溫</span> <b id="temp">--°</b></span>
-    <span class="pill"><span style="color:var(--coin)">💰</span> <b id="goldDisplay">10</b></span>
-    <span class="pill"><span class="icon" style="background:radial-gradient(circle at 50% 40%,#ffeaa7 0 50%,#0000 51%), radial-gradient(#ffd06b 55%,#0000 56%);border-radius:50%"></span><span class="muted" data-lang="ui_daily_reset">每日重置</span> <b id="resetCountdown">--:--:--</b></span>
-    <span class="pill" id="langSwitcher" style="cursor:pointer; margin-left: auto;"><span data-lang="ui_lang">語言</span>: <b id="langDisplay">繁</b></span>
-  </div>
-
-  <!-- 舞台 -->
-  <div id="stage">
-    <canvas id="map" width="320" height="180"></canvas>
-    <div class="hud">
-      <div class="dpad" id="dpad">
-        <button class="up"   data-dir="up">▲</button>
-        <button class="down" data-dir="down">▼</button>
-        <button class="left" data-dir="left">◀</button>
-        <button class="right"data-dir="right">▶</button>
-      </div>
-      <div id="interaction-buttons-container" class="interaction-buttons">
-        <button id="useBtn" class="hud-btn" data-lang="btn_use" style="display:none;">使用</button>
-        <button id="exitBtn" class="hud-btn btn-warn" data-lang="btn_exit" style="display:none;">離開</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 底部操作 -->
-  <div class="bottombar">
-    <button id="answerBtn" class="btn-ok" data-lang="btn_answer">今天答案</button>
-    <button id="drawEquipBtn" class="btn-warn" data-lang="btn_draw_equip">抽裝備</button>
-    <button id="nameBtn" class="btn-secondary" data-lang="btn_name">名字</button>
-    <button id="petBtn" class="btn-secondary" data-lang="btn_pet">寵物</button>
-    <button id="backpackBtn" class="btn-secondary" data-lang="btn_backpack">背包</button>
-    <button id="gearBtn" class="btn-secondary" data-lang="btn_gear">裝備</button>
-    <button id="musicBtn" class="btn-secondary">🎵</button>
-    <div class="msg" id="msgBox"><div class="muted" data-lang="hint_welcome">探索你的小空間吧！</div></div>
-  </div>
-</div>
-
-<!-- 面板 -->
-<div class="sheet" id="gearSheet" aria-hidden="true">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
-    <div><b data-lang="gear_title">裝備</b> <span class="small" data-lang="gear_subtitle">（點按切換穿著）</span></div>
-    <button class="close-btn" data-panel="gearSheet" data-lang="btn_close">關閉</button>
-  </div>
-  <div class="grid" id="gearGrid"></div>
-</div>
-
-<div class="sheet" id="petSheet" aria-hidden="true">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
-    <div><b data-lang="pet_title">寵物</b> <span class="small" data-lang="pet_subtitle">（點按召喚/隱藏）</span></div>
-    <button class="close-btn" data-panel="petSheet" data-lang="btn_close">關閉</button>
-  </div>
-  <div class="grid" id="petGrid"></div>
-</div>
-
-<div class="sheet" id="backpackSheet" aria-hidden="true">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
-    <div><b data-lang="backpack_title">背包</b> <span class="small" data-lang="backpack_subtitle">（點按閱讀已購買的書）</span></div>
-    <button class="close-btn" data-panel="backpackSheet" data-lang="btn_close">關閉</button>
-  </div>
-  <div class="grid" id="backpackGrid"></div>
-</div>
-
-<div class="sheet" id="shopSheet" aria-hidden="true">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
-    <div><b data-lang="shop_title">書店</b> <span class="small" data-lang="shop_subtitle">（與我購買智慧吧！）</span></div>
-    <button class="close-btn" data-panel="shopSheet" data-lang="btn_close">關閉</button>
-  </div>
-  <div class="grid" id="shopGrid"></div>
-</div>
-
-<div class="sheet" id="fashionShopSheet" aria-hidden="true">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
-    <div><b data-lang="fashion_shop_title">潮流服飾</b> <span class="small" data-lang="fashion_shop_subtitle">（來點不一樣的風格？）</span></div>
-    <button class="close-btn" data-panel="fashionShopSheet" data-lang="btn_close">關閉</button>
-  </div>
-  <div class="grid" id="fashionShopGrid"></div>
-</div>
-
-<div class="sheet" id="nameSheet" aria-hidden="true">
-  <div class="row" style="justify-content:space-between;margin-bottom:8px">
-    <div><b data-lang="name_title">更改名字</b></div>
-    <button class="close-btn" data-panel="nameSheet" data-lang="btn_close">關閉</button>
-  </div>
-  <div class="row" style="gap: 8px;">
-    <input type="text" id="nameInput" placeholder="輸入你的名字" style="flex:1; padding: 8px; border-radius: 8px; border: 1px solid #334074; background: var(--bg); color: var(--text);">
-    <button id="saveNameBtn" data-lang="btn_save">儲存</button>
-  </div>
-</div>
-
-<!-- 書本閱讀器 -->
-<div id="bookReader">
-  <h3 id="bookTitle"></h3>
-  <div id="bookContent"></div>
-  <div id="bookNav">
-    <button id="prevPageBtn" data-lang="btn_prev_page">上一頁</button>
-    <span id="pageIndicator"></span>
-    <button id="nextPageBtn" data-lang="btn_next_page">下一頁</button>
-  </div>
-   <button id="closeBookBtn" data-lang="btn_close" style="margin-top: 10px; width:100%;">關閉</button>
-</div>
-
-<script src="books.js"></script>
-<script>
-// Wrap entire game logic in a function to be called after books.js is loaded
-function initializeGame() {
-  /* =============================
-     環境與工具
-  ============================= */
-  const $ = sel => document.querySelector(sel);
-  const map = $('#map'), ctx = map.getContext('2d');
-  const stage = $('#stage'), msgBox = $('#msgBox'), dpad = $('#dpad');
-  const interactionBtnContainer = $('#interaction-buttons-container');
-  const useBtn = $('#useBtn'), exitBtn = $('#exitBtn');
-  const isTouch = matchMedia('(pointer:coarse)').matches;
-  let isDay = true;
-  let effects = [];
-
-  /* =============================
-     語言與在地化
-  ============================= */
-  const LANG_STRINGS = {
-    'zh-TW': {
-      ui_temp: '氣溫', ui_daily_reset: '每日重置', ui_lang: '語言', lang_symbol: '繁',
-      btn_answer: '今天答案', btn_answer_done: '每日答案', btn_draw_equip: '抽裝備', btn_draw_done: '今日已抽', btn_gear: '裝備', btn_close: '關閉', btn_pet: '寵物', btn_backpack: '背包', btn_prev_page: '上一頁', btn_next_page: '下一頁', btn_buy: '購買', btn_read: '閱讀', btn_name: '名字', btn_save: '儲存', btn_use: '使用', btn_exit: '離開',
-      gear_title: '裝備', gear_subtitle: '（點按切換穿著）', btn_equip: '穿上', btn_unequip: '脫下',
-      pet_title: '寵物', pet_subtitle: '（點按召喚/隱藏）', btn_summon: '召喚', btn_unsummon: '隱藏',
-      backpack_title: '背包', backpack_subtitle: '（點按閱讀已購買的書）', backpack_empty: '你的背包空空如也。',
-      shop_title: '書店', shop_subtitle: '（與我購買智慧吧！）', btn_owned: '已擁有',
-      fashion_shop_title: '潮流服飾', fashion_shop_subtitle: '（來點不一樣的風格？）',
-      name_title: '更改名字',
-      type_head: '頭部', type_eyes: '眼部', type_body: '身體', type_legs: '腿部',
-      hint_welcome: '探索你的小空間吧！',
-      hint_sit: '你坐在桌邊... 按離開鈕起身。',
-      hint_sleep: '你躺在床上休息... 按離開鈕起床。',
-      hint_new_item: '恭喜你抽到新裝備：<b>{itemName}</b>！',
-      hint_all_items: '恭喜！你已收集所有裝備！',
-      hint_buy_book: '你花了 {price} 金幣買下了《{bookName}》。',
-      hint_buy_fashion: '你花了 {price} 金幣買下了「{itemName}」！',
-      hint_no_gold: '金幣不足！',
-      answer_title: '今日答案',
-      answer_A: ["你已經走在路上","把目光放遠一點","慢慢來也沒關係","今天請溫柔對自己","先完成一件小事","把心安放好","勇敢，但不逞強","相信步伐的力量","把失敗當作回饋","試著微笑一下","接納不確定","允許自己休息","先呼吸，再出發","別忘了補水","把情緒說出來","堅持你認同的節奏","去散步五分鐘","寫下你感謝的三件事","你值得被善待","今天的你，已足夠好"],
-      answer_B: ["明天會更清晰","答案會在路上出現","努力不一定立刻有效","值得的事都需要時間","放下完美主義","把焦點放在可行一步","先做能做的","你可以求助","用好奇替代恐懼","把標準調整到可達","請相信自己的恢復力","把注意力回到當下","把目光從結果移開","讓身體告訴你界線","把忙碌變成專注","練習說不"],
-      answer_C: ["今天已經足夠努力，未來才最緊要。","此刻的安定，比什麼都珍貴。","保持善良與界線，兩者都要。","你不是一個人，真的。","放過自己一次試試。","心軸穩了，路就不晃了。","把力量留給重要的人與事。","願你在重要處清醒，在細碎處柔軟。","少比較，多行動。","慢，但堅定。"],
-      answer_tags: ["#專注","#補水","#呼吸","#放鬆","#行一小步","#界線","#耐心","#感謝","#睡眠","#溫柔","#相信","#整理"],
-      item_sunglasses_name: '太陽眼鏡', item_sunglasses_desc: '一副很酷的配件。',
-      item_suit_name: '西裝', item_suit_desc: '看起來很專業。',
-      item_cap_white_name: '白色鴨舌帽', item_cap_white_desc: '經典簡潔的風格。',
-      item_shorts_red_name: '紅色短褲', item_shorts_red_desc: '充滿活力的選擇。',
-      item_cap_red_name: '紅色鴨舌帽', item_cap_red_desc: '引人注目的紅色帽子。',
-      item_cap_blue_name: '藍色鴨舌帽', item_cap_blue_desc: '冷靜沉穩的藍色。',
-      item_glasses_round_name: '圓框眼鏡', item_glasses_round_desc: '帶點復古的文青感。',
-      item_glasses_square_name: '方框眼鏡', item_glasses_square_desc: '俐落的現代風格。',
-      item_shirt_tee_name: '白色T恤', item_shirt_tee_desc: '百搭的基本款。',
-      item_shirt_jacket_name: '夾克', item_shirt_jacket_desc: '適合微涼的天氣。',
-      item_shirt_hoodie_name: '帽T', item_shirt_hoodie_desc: '舒適休閒的穿搭。',
-      item_pants_jeans_name: '牛仔褲', item_pants_jeans_desc: '永不退流行的經典。',
-      item_pants_track_name: '運動褲', item_pants_track_desc: '方便活動的褲子。',
-      item_pants_khaki_name: '卡其褲', item_pants_khaki_desc: '輕鬆的休閒風格。',
-      item_cape_starlight_name: '星光斗篷', item_cape_starlight_desc: '閃爍著宇宙的光芒。',
-      item_crown_royal_name: '皇家王冠', item_crown_royal_desc: '尊貴的象徵。',
-      item_boots_rocket_name: '火箭靴', item_boots_rocket_desc: '感覺能飛起來！',
-      pet_cat_bw_name: '黑白貓',
-      item_helmet_galaxy_name: '銀河頭盔', item_helmet_galaxy_desc: '將星辰戴在頭上。',
-      item_jacket_flame_name: '烈焰夾克', item_jacket_flame_desc: '熱情如火的風格。',
-      item_boots_hover_name: '懸浮靴', item_boots_hover_desc: '離地三公分的時尚。',
-      book_compass_name: '星辰追逐者的羅盤',
-      book_garden_name: '寧靜的心靈花園',
-      book_emotions_name: '情緒整理術',
-      book_mindfulness_name: '當下的力量',
-      book_charisma_name: '引力法則：個人魅力的心理學',
-      book_shadow_name: '城市幻影',
-      npc_bookstore_name: '圖書商店',
-      npc_fashion_store_name: '時裝商店',
-    },
-    'zh-CN': {
-      ui_temp: '气温', ui_daily_reset: '每日重置', ui_lang: '语言', lang_symbol: '简',
-      btn_answer: '今天答案', btn_answer_done: '每日答案', btn_draw_equip: '抽装备', btn_draw_done: '今日已抽', btn_gear: '装备', btn_close: '关闭', btn_pet: '宠物', btn_backpack: '背包', btn_prev_page: '上一页', btn_next_page: '下一页', btn_buy: '购买', btn_read: '阅读', btn_name: '名字', btn_save: '保存', btn_use: '使用', btn_exit: '离开',
-      gear_title: '装备', gear_subtitle: '（点击切换穿着）', btn_equip: '穿上', btn_unequip: '脱下',
-      pet_title: '宠物', pet_subtitle: '（点击召唤/隐藏）', btn_summon: '召唤', btn_unsummon: '隐藏',
-      backpack_title: '背包', backpack_subtitle: '（点击阅读已购买的书）', backpack_empty: '你的背包空空如也。',
-      shop_title: '书店', shop_subtitle: '（与我购买智慧吧！）', btn_owned: '已拥有',
-      fashion_shop_title: '潮流服饰', fashion_shop_subtitle: '（来点不一样的风格？）',
-      name_title: '更改名字',
-      type_head: '头部', type_eyes: '眼部', type_body: '身体', type_legs: '腿部',
-      hint_welcome: '探索你的小空间吧！',
-      hint_sit: '你坐在桌边... 按离开钮起身。',
-      hint_sleep: '你躺在床上休息... 按离开钮起床。',
-      hint_new_item: '恭喜你抽到新装备：<b>{itemName}</b>！',
-      hint_all_items: '恭喜！你已收集所有装备！',
-      hint_buy_book: '你花了 {price} 金币买下了《{bookName}》。',
-      hint_buy_fashion: '你花了 {price} 金币买下了「{itemName}」！',
-      hint_no_gold: '金币不足！',
-      answer_title: '今日答案',
-      answer_A: ["你已经走在路上","把目光放远一点","慢慢来也没关系","今天请温柔对自己","先完成一件小事","把心安放好","勇敢，但不逞强","相信步伐的力量","把失败当作回馈","试着微笑一下","接纳不确定","允许自己休息","先呼吸，再出发","别忘了补水","把情绪说出来","坚持你认同的节奏","去散步五分钟","写下你感谢的三件事","你值得被善待","今天的你，已足够好"],
-      answer_B: ["明天会更清晰","答案会在路上出现","努力不一定立刻有效","值得的事都需要时间","放下完美主义","把焦点放在可行一步","先做能做的","你可以求助","用好奇替代恐惧","把标准调整到可达","请相信自己的恢复力","把注意力回到当下","把目光从结果移开","让身体告诉你界线","把忙碌变成专注","练习说不"],
-      answer_C: ["今天已经足够努力，未来才最紧要。","此刻的安定，比什么都珍贵。","保持善良与界线，两者都要。","你不是一个人，真的。","放过自己一次试试。","心轴稳了，路就不晃了。","把力量留给重要的人与事。","愿你在重要处清醒，在细碎处柔软。","少比较，多行动。","慢，但坚定。"],
-      answer_tags: ["#专注","#补水","#呼吸","#放松","#行一小步","#界线","#耐心","#感谢","#睡眠","#温柔","#相信","#整理"],
-      item_sunglasses_name: '太阳眼镜', item_sunglasses_desc: '一副很酷的配件。',
-      item_suit_name: '西装', item_suit_desc: '看起来很专业。',
-      item_cap_white_name: '白色鸭舌帽', item_cap_white_desc: '经典简洁的风格。',
-      item_shorts_red_name: '红色短裤', item_shorts_red_desc: '充满活力的选择。',
-      item_cap_red_name: '红色鸭舌帽', item_cap_red_desc: '引人注目的红色帽子。',
-      item_cap_blue_name: '蓝色鸭舌帽', item_cap_blue_desc: '冷静沉稳的蓝色。',
-      item_glasses_round_name: '圆框眼镜', item_glasses_round_desc: '带点复古的文青感。',
-      item_glasses_square_name: '方框眼镜', item_glasses_square_desc: '俐落的现代风格。',
-      item_shirt_tee_name: '白色T恤', item_shirt_tee_desc: '百搭的基本款。',
-      item_shirt_jacket_name: '夹克', item_shirt_jacket_desc: '适合微凉的天气。',
-      item_shirt_hoodie_name: '帽衫', item_shirt_hoodie_desc: '舒适休闲的穿搭。',
-      item_pants_jeans_name: '牛仔裤', item_pants_jeans_desc: '永不退流行的经典。',
-      item_pants_track_name: '运动裤', item_pants_track_desc: '方便活动的裤子。',
-      item_pants_khaki_name: '卡其裤', item_pants_khaki_desc: '轻松的休闲风格。',
-      item_cape_starlight_name: '星光斗篷', item_cape_starlight_desc: '闪烁着宇宙的光芒。',
-      item_crown_royal_name: '皇家王冠', item_crown_royal_desc: '尊贵的象征。',
-      item_boots_rocket_name: '火箭靴', item_boots_rocket_desc: '感觉能飞起来！',
-      pet_cat_bw_name: '黑白猫',
-      item_helmet_galaxy_name: '银河头盔', item_helmet_galaxy_desc: '将星辰戴在头上。',
-      item_jacket_flame_name: '烈焰夹克', item_jacket_flame_desc: '热情如火的风格。',
-      item_boots_hover_name: '悬浮靴', item_boots_hover_desc: '离地三公分的时尚。',
-      book_compass_name: '星辰追逐者的罗盘',
-      book_garden_name: '宁静的心灵花园',
-      book_emotions_name: '情绪整理术',
-      book_mindfulness_name: '当下的力量',
-      book_charisma_name: '引力法则：个人魅力的心理学',
-      book_shadow_name: '城市幻影',
-      npc_bookstore_name: '图书商店',
-      npc_fashion_store_name: '时装商店',
-    },
-    'en': {
-      ui_temp: 'Temp', ui_daily_reset: 'Daily Reset', ui_lang: 'Language', lang_symbol: 'En',
-      btn_answer: "Today's Answer", btn_answer_done: "Day's Answer", btn_draw_equip: 'Draw Gear', btn_draw_done: 'Drawn Today', btn_gear: 'Gear', btn_close: 'Close', btn_pet: 'Pet', btn_backpack: 'Backpack', btn_prev_page: 'Prev', btn_next_page: 'Next', btn_buy: 'Buy', btn_read: 'Read', btn_name: 'Name', btn_save: 'Save', btn_use: 'Use', btn_exit: 'Exit',
-      gear_title: 'Gear', gear_subtitle: '(Click to toggle)', btn_equip: 'Equip', btn_unequip: 'Unequip',
-      pet_title: 'Pet', pet_subtitle: '(Click to summon/hide)', btn_summon: 'Summon', btn_unsummon: 'Hide',
-      backpack_title: 'Backpack', backpack_subtitle: '(Click to read purchased books)', backpack_empty: 'Your backpack is empty.',
-      shop_title: 'Bookstore', shop_subtitle: '(Buy some wisdom from me!)', btn_owned: 'Owned',
-      fashion_shop_title: 'Fashion Store', fashion_shop_subtitle: '(How about a different style?)',
-      name_title: 'Change Name',
-      type_head: 'Head', type_eyes: 'Eyes', type_body: 'Body', type_legs: 'Legs',
-      hint_welcome: 'Explore your little space!',
-      hint_sit: 'You are sitting... Press the Exit button to leave.',
-      hint_sleep: 'You are resting... Press the Exit button to get up.',
-      hint_new_item: 'You got a new item: <b>{itemName}</b>!',
-      hint_all_items: 'Congratulations! You have collected all items!',
-      hint_buy_book: 'You spent {price} gold on "{bookName}".',
-      hint_buy_fashion: 'You spent {price} gold on "{itemName}"!',
-      hint_no_gold: 'Not enough gold!',
-      answer_title: "Today's Answer",
-      answer_A: ["You are on your way.", "Look at the bigger picture.", "It's okay to go slow.", "Be gentle with yourself today.", "Finish one small thing first.", "Settle your heart.", "Be brave, but not reckless.", "Trust the power of your steps.", "Treat failure as feedback.", "Try to smile.", "Embrace uncertainty.", "Allow yourself to rest.", "Breathe first, then set off.", "Don't forget to hydrate.", "Speak your emotions.", "Stick to a rhythm you approve of.", "Go for a five-minute walk.", "Write down three things you are grateful for.", "You deserve to be treated well.", "You are good enough for today."],
-      answer_B: ["Tomorrow will be clearer.", "The answer will appear on the way.", "Hard work doesn't always pay off immediately.", "Things worth doing take time.", "Let go of perfectionism.", "Focus on the next feasible step.", "Do what you can first.", "You can ask for help.", "Replace fear with curiosity.", "Adjust your standards to be achievable.", "Trust in your resilience.", "Bring your attention to the present.", "Shift your focus away from the outcome.", "Let your body tell you your limits.", "Turn busyness into focus.", "Practice saying no."],
-      answer_C: ["You've worked hard enough today, the future is what matters.", "The peace of this moment is priceless.", "Maintain both kindness and boundaries.", "You are not alone, really.", "Try letting yourself off the hook for once.", "When your core is stable, the path won't sway.", "Save your energy for important people and things.", "May you be clear-headed in what matters, and gentle in the small things.", "Compare less, act more.", "Slow, but steady."],
-      answer_tags: ["#Focus", "#Hydrate", "#Breathe", "#Relax", "#SmallStep", "#Boundaries", "#Patience", "#Gratitude", "#Sleep", "#Gentle", "#Believe", "#Organize"],
-      item_sunglasses_name: 'Sunglasses', item_sunglasses_desc: 'A pair of cool shades.',
-      item_suit_name: 'Suit', item_suit_desc: 'Looks very professional.',
-      item_cap_white_name: 'White Cap', item_cap_white_desc: 'A classic and clean style.',
-      item_shorts_red_name: 'Red Shorts', item_shorts_red_desc: 'A vibrant choice.',
-      item_cap_red_name: 'Red Cap', item_cap_red_desc: 'An eye-catching red hat.',
-      item_cap_blue_name: 'Blue Cap', item_cap_blue_desc: 'A calm and steady blue.',
-      item_glasses_round_name: 'Round Glasses', item_glasses_round_desc: 'A touch of retro, literary feel.',
-      item_glasses_square_name: 'Square Glasses', item_glasses_square_desc: 'A sharp, modern style.',
-      item_shirt_tee_name: 'White T-shirt', item_shirt_tee_desc: 'A versatile basic item.',
-      item_shirt_jacket_name: 'Jacket', item_shirt_jacket_desc: 'Suitable for cool weather.',
-      item_shirt_hoodie_name: 'Hoodie', item_shirt_hoodie_desc: 'Comfortable and casual wear.',
-      item_pants_jeans_name: 'Jeans', item_pants_jeans_desc: 'A timeless classic.',
-      item_pants_track_name: 'Track Pants', item_pants_track_desc: 'Pants for easy movement.',
-      item_pants_khaki_name: 'Khaki Pants', item_pants_khaki_desc: 'A relaxed, casual style.',
-      item_cape_starlight_name: 'Starlight Cape', item_cape_starlight_desc: 'Shimmers with the light of the cosmos.',
-      item_crown_royal_name: 'Royal Crown', item_crown_royal_desc: 'A symbol of nobility.',
-      item_boots_rocket_name: 'Rocket Boots', item_boots_rocket_desc: 'Feels like you could fly!',
-      pet_cat_bw_name: 'Black & White Cat',
-      item_helmet_galaxy_name: 'Galaxy Helmet', item_helmet_galaxy_desc: 'Wear the cosmos on your head.',
-      item_jacket_flame_name: 'Flame Jacket', item_jacket_flame_desc: 'A style as hot as fire.',
-      item_boots_hover_name: 'Hover Boots', item_boots_hover_desc: 'Fashion that\'s 3cm off the ground.',
-      book_compass_name: 'The Star Chaser\'s Compass',
-      book_garden_name: 'The Serene Mind Garden',
-      book_emotions_name: 'The Art of Emotional Regulation',
-      book_mindfulness_name: 'The Power of Now',
-      book_charisma_name: 'The Gravity Law: Psychology of Charisma',
-      book_shadow_name: 'Urban Phantom',
-      npc_bookstore_name: 'Bookstore',
-      npc_fashion_store_name: 'Fashion Store',
-    },
-    'ja': {
-      ui_temp: '気温', ui_daily_reset: '毎日リセット', ui_lang: '言語', lang_symbol: '日',
-      btn_answer: '今日の答え', btn_answer_done: '今日の答え', btn_draw_equip: '装備ガチャ', btn_draw_done: '本日抽選済み', btn_gear: '装備', btn_close: '閉じる', btn_pet: 'ペット', btn_backpack: 'バッグ', btn_prev_page: '前へ', btn_next_page: '次へ', btn_buy: '購入', btn_read: '読む', btn_name: '名前', btn_save: '保存', btn_use: '使う', btn_exit: '出る',
-      gear_title: '装備', gear_subtitle: '（クリックで着脱）', btn_equip: '装備', btn_unequip: '外す',
-      pet_title: 'ペット', pet_subtitle: '（クリックで召喚/隠す）', btn_summon: '召喚', btn_unsummon: '隠す',
-      backpack_title: 'バッグ', backpack_subtitle: '（購入した本を読む）', backpack_empty: 'バッグは空です。',
-      shop_title: '書店', shop_subtitle: '（私から知恵を買いませんか？）', btn_owned: '所有済み',
-      fashion_shop_title: 'ファッション店', fashion_shop_subtitle: '（いつもと違うスタイルはいかが？）',
-      name_title: '名前を変更',
-      type_head: '頭', type_eyes: '目', type_body: '体', type_legs: '脚',
-      hint_welcome: 'あなたの小さな空間を探検しよう！',
-      hint_sit: 'テーブルに座っています... 「出る」ボタンで離れます。',
-      hint_sleep: 'ベッドで休んでいます... 「出る」ボタンで起きます。',
-      hint_new_item: '新しい装備を手に入れた：<b>{itemName}</b>！',
-      hint_all_items: 'おめでとう！すべての装備を集めました！',
-      hint_buy_book: '{price}ゴールドで「{bookName}」を購入しました。',
-      hint_buy_fashion: '{price}ゴールドで「{itemName}」を購入しました！',
-      hint_no_gold: 'ゴールドが足りません！',
-      answer_title: '今日の答え',
-      answer_A: ["あなたはもう道を進んでいます。", "視野を広く持ちましょう。", "ゆっくりで大丈夫です。", "今日は自分に優しく。", "まず小さなことを一つ終わらせて。", "心を落ち着かせて。", "勇敢に、でも無謀にならず。", "一歩の力を信じて。", "失敗をフィードバックと捉えて。", "少し微笑んでみて。", "不確かさを受け入れて。", "休むことを自分に許して。", "まず深呼吸、それから出発。", "水分補給を忘れずに。", "感情を言葉にして。", "自分が納得できるリズムを保って。", "5分間散歩に行きましょう。", "感謝することを3つ書き出して。", "あなたは優しくされる価値があります。", "今日のあなたは、それで十分です。"],
-      answer_B: ["明日はもっとはっきりするでしょう。", "答えは道中で見つかります。", "努力がすぐに報われるとは限りません。", "価値あることには時間が必要です。", "完璧主義を手放して。", "実行可能な一歩に焦点を当てて。", "できることから始めましょう。", "助けを求めてもいいのです。", "恐れを好奇心に置き換えて。", "基準を達成可能なものに調整して。", "自分の回復力を信じて。", "「今」に注意を向けて。", "結果から目を離して。", "体と心に境界線を教えてもらいましょう。", "忙しさを集中力に変えて。", "「いいえ」と言う練習をしましょう。"],
-      answer_C: ["今日はもう十分頑張った、未来が最も重要です。", "この瞬間の安らぎは何よりも貴重です。", "優しさと境界線、両方を持ちましょう。", "あなたは一人じゃない、本当に。", "一度自分を許してみては。", "心の軸が安定すれば、道は揺るぎません。", "大切な人やことのために力を使いましょう。", "重要なことにははっきりと、些細なことには柔らかくありますように。", "比べることを減らし、行動を増やしましょう。", "ゆっくり、でも着実に。"],
-      answer_tags: ["#集中", "#水分補給", "#呼吸", "#リラックス", "#小さな一歩", "#境界線", "#忍耐", "#感謝", "#睡眠", "#優しさ", "#信じる", "#整理"],
-      item_sunglasses_name: 'サングラス', item_sunglasses_desc: 'クールなアクセサリー。',
-      item_suit_name: 'スーツ', item_suit_desc: 'とてもプロフェッショナルに見える。',
-      item_cap_white_name: '白いキャップ', item_cap_white_desc: 'クラシックでクリーンなスタイル。',
-      item_shorts_red_name: '赤いショートパンツ', item_shorts_red_desc: '活力に満ちた選択。',
-      item_cap_red_name: '赤いキャップ', item_cap_red_desc: '人目を引く赤い帽子。',
-      item_cap_blue_name: '青いキャップ', item_cap_blue_desc: '落ち着いた青色。',
-      item_glasses_round_name: '丸メガネ', item_glasses_round_desc: 'レトロで文化的な雰囲気。',
-      item_glasses_square_name: '四角いメガネ', item_glasses_square_desc: 'シャープでモダンなスタイル。',
-      item_shirt_tee_name: '白いTシャツ', item_shirt_tee_desc: '万能な基本アイテム。',
-      item_shirt_jacket_name: 'ジャケット', item_shirt_jacket_desc: '涼しい天気にぴったり。',
-      item_shirt_hoodie_name: 'パーカー', item_shirt_hoodie_desc: '快適でカジュアルな服装。',
-      item_pants_jeans_name: 'ジーンズ', item_pants_jeans_desc: '時代を超えて愛される定番。',
-      item_pants_track_name: 'トラックパンツ', item_pants_track_desc: '動きやすいパンツ。',
-      item_pants_khaki_name: 'カーキパンツ', item_pants_khaki_desc: 'リラックスしたカジュアルスタイル。',
-      item_cape_starlight_name: '星光のマント', item_cape_starlight_desc: '宇宙の光で輝いている。',
-      item_crown_royal_name: '王家の冠', item_crown_royal_desc: '高貴さの象徴。',
-      item_boots_rocket_name: 'ロケットブーツ', item_boots_rocket_desc: '飛べそうな気がする！',
-      pet_cat_bw_name: '白黒猫',
-      item_helmet_galaxy_name: 'ギャラクシーヘルメット', item_helmet_galaxy_desc: '星々を頭に纏う。',
-      item_jacket_flame_name: 'フレイムジャケット', item_jacket_flame_desc: '炎のように熱いスタイル。',
-      item_boots_hover_name: 'ホバーブーツ', item_boots_hover_desc: '地面から3cmのファッション。',
-      book_compass_name: '星を追う者の羅針盤',
-      book_garden_name: '静寂な心の庭',
-      book_emotions_name: '感情整理の術',
-      book_mindfulness_name: '「今」という力',
-      book_charisma_name: '引力の法則：カリスマの心理学',
-      book_shadow_name: '都市の幻影',
-      npc_bookstore_name: '書店',
-      npc_fashion_store_name: 'ファッション店',
-    }
-  };
-  const LANG_CYCLE = ['zh-TW', 'zh-CN', 'en', 'ja'];
-  let currentLang = 'zh-TW';
-
-  function t(key, params = {}) {
-      if (!key) return '';
-      const langPack = LANG_STRINGS[currentLang] || LANG_STRINGS['zh-TW'];
-      let str = langPack[key] || key;
-      if (str === key && BOOK_CONTENT[currentLang] && BOOK_CONTENT[currentLang][key]) {
-        str = BOOK_CONTENT[currentLang][key];
-      }
-      for (const p in params) {
-          str = str.replace(`{${p}}`, params[p]);
-      }
-      return str;
-  }
- 
-  function updateUIText() {
-    document.querySelectorAll('[data-lang]').forEach(el => {
-      const key = el.dataset.lang;
-      if (key === 'btn_answer') {
-        el.textContent = (localStorage.getItem('daily.usedAt') === todayKey()) ? t('btn_answer_done') : t('btn_answer');
-      } else if (! (el.id === 'drawEquipBtn' && el.disabled) ) {
-         el.textContent = t(key);
-      }
-    });
-    $('#langDisplay').textContent = t('lang_symbol');
-    updateDailyStatus();
-    renderAllSheets();
-  }
-
-  function setLanguage(lang) {
-    currentLang = lang;
-    document.documentElement.lang = lang.startsWith('zh') ? lang : lang.split('-')[0];
-    updateUIText();
-    saveState();
-  }
-
-  /* =============================
-     遊戲資料
-  ============================= */
-  const W = map.width, H = map.height;
- 
-  const SCENES = {
-      room: {
-          BED: { id: 'BED', x: 20, y: 30, w: 32, h: 20 },
-          TABLE: { id: 'TABLE', x: W - 60, y: 80, w: 40, h: 16 },
-          CHAIR: { id: 'CHAIR', x: W - 52, y: 100, w: 10, h: 10 },
-          DOOR: { id: 'DOOR_TO_LIB', x: W/2 - 10, y: 0, w: 20, h: 10 }
-      },
-      library: {
-          LIBRARIAN: { id: 'LIBRARIAN', x: 40, y: 50, w: 8, h: 16 },
-          LIBRARIAN_INTERACTION_ZONE: { id: 'LIBRARIAN_ZONE', x: 35, y: 45, w: 18, h: 26 },
-          FASHION_NPC: { id: 'FASHION_NPC', x: 180, y: 60, w: 8, h: 16},
-          FASHION_NPC_INTERACTION_ZONE: { id: 'FASHION_NPC_ZONE', x: 175, y: 55, w: 18, h: 26},
-          DOOR: { id: 'DOOR_TO_ROOM', x: W/2 - 10, y: H - 10, w: 20, h: 10 }
-      }
-  };
-
-  const player = {
-    x: W/2, y: H/2, speed: 1.2, dir: 'down', state: 'idle', scene: 'room',
-    name: '玩家',
-    interactionTarget: null,
-    isLocked: false,
-    sceneTransitionCooldown: 0,
-    equip:{ head: null, eyes: null, body: null, legs: null },
-    unlockedItems: new Set(['sunglasses', 'suit', 'cap_white', 'shorts_red']),
-    inventory: new Set(), 
-    gold: 10,
-    movedSinceLastSave: false
-  };
-
-  const pet = {
-      x: W / 2 + 20, y: H / 2, dir: 'left', state: 'wandering',
-      state_timer: 120, visible: false,
-      love_timer: 0,
-      gold_find_timer: Math.random() * 1200 + 1200,
-  };
- 
-  const ALL_EQUIPMENT = [
-    {id:'sunglasses', nameKey:'item_sunglasses_name', descKey:'item_sunglasses_desc', type:'eyes'},
-    {id:'suit', nameKey:'item_suit_name', descKey:'item_suit_desc', type:'body'},
-    {id:'cap_white', nameKey:'item_cap_white_name', descKey:'item_cap_white_desc', type:'head'},
-    {id:'shorts_red', nameKey:'item_shorts_red_name', descKey:'item_shorts_red_desc', type:'legs'},
-    {id:'cap_red', nameKey:'item_cap_red_name', descKey:'item_cap_red_desc', type:'head'},
-    {id:'cap_blue', nameKey:'item_cap_blue_name', descKey:'item_cap_blue_desc', type:'head'},
-    {id:'glasses_round', nameKey:'item_glasses_round_name', descKey:'item_glasses_round_desc', type:'eyes'},
-    {id:'glasses_square', nameKey:'item_glasses_square_name', descKey:'item_glasses_square_desc', type:'eyes'},
-    {id:'shirt_tee', nameKey:'item_shirt_tee_name', descKey:'item_shirt_tee_desc', type:'body'},
-    {id:'shirt_jacket', nameKey:'item_shirt_jacket_name', descKey:'item_shirt_jacket_desc', type:'body'},
-    {id:'shirt_hoodie', nameKey:'item_shirt_hoodie_name', descKey:'item_shirt_hoodie_desc', type:'body'},
-    {id:'pants_jeans', nameKey:'item_pants_jeans_name', descKey:'item_pants_jeans_desc', type:'legs'},
-    {id:'pants_track', nameKey:'item_pants_track_name', descKey:'item_pants_track_desc', type:'legs'},
-    {id:'pants_khaki', nameKey:'item_pants_khaki_name', descKey:'item_pants_khaki_desc', type:'legs'},
-    {id:'cape_starlight', nameKey:'item_cape_starlight_name', descKey:'item_cape_starlight_desc', type:'body'},
-    {id:'crown_royal', nameKey:'item_crown_royal_name', descKey:'item_crown_royal_desc', type:'head'},
-    {id:'boots_rocket', nameKey:'item_boots_rocket_name', descKey:'item_boots_rocket_desc', type:'legs'},
-    {id:'helmet_galaxy', nameKey:'item_helmet_galaxy_name', descKey:'item_helmet_galaxy_desc', type:'head', price: 15, isSpecial: true},
-    {id:'jacket_flame', nameKey:'item_jacket_flame_name', descKey:'item_jacket_flame_desc', type:'body', price: 15, isSpecial: true},
-    {id:'boots_hover', nameKey:'item_boots_hover_name', descKey:'item_boots_hover_desc', type:'legs', price: 15, isSpecial: true},
-  ];
-  const FASHION_ITEMS = ALL_EQUIPMENT.filter(item => item.isSpecial);
-  const ALL_PETS = [{id: 'cat_blackwhite', nameKey: 'pet_cat_bw_name'}];
-  
-  /* =============================
-     繪圖函式
-  ============================= */
-  const floorPattern = (()=>{
-    const c = document.createElement('canvas'); c.width = c.height = 8;
-    const g = c.getContext('2d');
-    g.fillStyle = '#182048'; g.fillRect(0,0,8,8);
-    g.fillStyle = '#1a2550'; g.fillRect(0,0,4,4);
-    g.fillStyle = '#141c3f'; g.fillRect(4,4,4,4);
-    return ctx.createPattern(c,'repeat');
-  })();
-
-  function drawDude(px, py, dir, equip, state){
-    const g = ctx;
-    const x = Math.round(px), y = Math.round(py);
-
-    if (state === 'sleeping') {
-      plotRect(px - 8, py - 4, 16, 8, '#a8b2d1');
-      plotRect(px - 10, py - 3, 4, 4, '#3b2d20');
-      plotRect(px - 7, py - 2, 2, 2, '#f2d2b6');
-      return;
-    }
-    if (state === 'sitting') { py += 2; }
-   
-    const skin='#f2d2b6', hair='#3b2d20', shoes='#151a30', outline='#0b0e1c';
-    const capColors = {cap_white:'#f5f6fa', cap_red:'#e84118', cap_blue:'#3742fa', crown_royal: '#f1c40f', 'helmet_galaxy': '#4834d4'};
-   
-    let shirtColor = '#3c6fd8', pantsColor = '#2a3558';
-    if(equip.body === 'suit') { shirtColor = '#2b3a67'; pantsColor = '#1f2847'; }
-    if(equip.body === 'shirt_tee') shirtColor = '#ffffff';
-    if(equip.body === 'shirt_jacket') shirtColor = '#4b6584';
-    if(equip.body === 'shirt_hoodie') shirtColor = '#d1d8e0';
-    if(equip.body === 'cape_starlight') { shirtColor = '#2c3e50'; }
-    if(equip.body === 'jacket_flame') { shirtColor = '#e67e22'; }
-   
-    if(equip.legs === 'shorts_red') pantsColor = '#e84118';
-    if(equip.legs === 'pants_jeans') pantsColor = '#2c3e50';
-    if(equip.legs === 'pants_track') pantsColor = '#778ca3';
-    if(equip.legs === 'pants_khaki') pantsColor = '#be9a60';
-   
-    if(equip.body === 'cape_starlight'){
-        plotRect(x-5, y+1, 10, 8, '#4834d4');
-        for(let i=0; i<3; i++) plotRect(x-4+i*3, y+2+i, 1, 1, '#f1c40f');
-    }
-     if(equip.body === 'jacket_flame'){
-        plotRect(x-3, y+3, 6, 2, '#f1c40f');
-        plotRect(x-2, y+5, 4, 1, '#e74c3c');
-    }
-
-    g.fillStyle = '#00000055'; 
-    if (equip.legs !== 'boots_hover') {
-      g.fillRect(x-4, y+8, 8, 2);
-    }
-
-    if (dir==='down'){
-      if(equip.head){ 
-        plotRect(x-4, y-8, 8, 4, capColors[equip.head]||'#fff'); 
-        if (equip.head === 'helmet_galaxy') plotRect(x-1, y-7, 2, 2, '#f1c40f');
-        if(equip.head==='crown_royal') { plotRect(x-2, y-9, 1,1,capColors.crown_royal); plotRect(x, y-9, 1,1,capColors.crown_royal); plotRect(x+2, y-9, 1,1,capColors.crown_royal); }
-      } 
-      else { plotRect(x-3,y-7,6,2,hair); plotRect(x-4,y-5,8,2,hair); }
-      plotRect(x-3,y-3,6,4,skin);
-      if(equip.eyes === 'sunglasses') { plotRect(x-3,y-2,6,2,'#0c0f1e'); }
-      else if(equip.eyes === 'glasses_round') { plotRect(x-2,y-1,1,1,outline); plotRect(x+1,y-1,1,1,outline); }
-      else if(equip.eyes === 'glasses_square') { plotRect(x-4,y-2,3,1,outline); plotRect(x+1,y-2,3,1,outline); }
-      else { plotRect(x-2,y-1,1,1,outline); plotRect(x+1,y-1,1,1,outline); }
-      plotRect(x-3,y+1,6,4,shirtColor);
-      if(equip.body === 'suit'){ plotRect(x-3,y+1,1,4,outline); plotRect(x+2,y+1,1,4,outline); }
-      if(state === 'idle'){
-          plotRect(x-3,y+5,2,3,pantsColor); plotRect(x+1,y+5,2,3,pantsColor);
-          if (equip.legs === 'boots_rocket') { plotRect(x-3,y+8,2,2,'#7f8c8d'); plotRect(x+1,y+8,2,2,'#7f8c8d');} 
-          else if (equip.legs === 'boots_hover') { plotRect(x-3,y+7,2,2,'#3498db'); plotRect(x+1,y+7,2,2,'#3498db');}
-          else { plotRect(x-3,y+8,2,1,shoes); plotRect(x+1,y+8,2,1,shoes); }
-      }
-    } else if (dir==='up'){
-      if(equip.head){ plotRect(x-3,y-7,6,6,capColors[equip.head]||'#fff'); }
-      else { plotRect(x-3,y-7,6,6,hair); }
-      plotRect(x-3,y-1,6,1,skin); plotRect(x-3,y,6,5,shirtColor);
-      if(equip.body === 'suit'){ plotRect(x-3,y,1,5,outline); plotRect(x+2,y,1,5,outline); }
-      if(state === 'idle'){
-        plotRect(x-3,y+5,2,3,pantsColor); plotRect(x+1,y+5,2,3,pantsColor);
-        if (equip.legs === 'boots_rocket') { plotRect(x-3,y+8,2,2,'#7f8c8d'); plotRect(x+1,y+8,2,2,'#7f8c8d');}
-        else if (equip.legs === 'boots_hover') { plotRect(x-3,y+7,2,2,'#3498db'); plotRect(x+1,y+7,2,2,'#3498db');}
-        else { plotRect(x-3,y+8,2,1,shoes); plotRect(x+1,y+8,2,1,shoes); }
-      }
-    } else if (dir==='left' || dir==='right'){
-      const flip = dir==='left' ? -1 : 1;
-      if(equip.head){ plotRect(x-4, y-8, 8, 4, capColors[equip.head]||'#fff'); if(equip.head !== 'crown_royal' && equip.head !== 'helmet_galaxy') plotRect(x - (dir==='left' ? 4 : -1), y-5, 5*flip, 1, capColors[equip.head]||'#fff');} 
-      else { plotRect(x-3*flip,y-7,6*flip,2,hair); plotRect(x-4*flip,y-5,8*flip,2,hair); }
-      plotRect(x-3*flip,y-3,6*flip,4,skin);
-      if(equip.eyes === 'sunglasses') { plotRect(x-(dir==='left'?3:0), y-2, 3,2, '#0c0f1e'); }
-      else if(equip.eyes === 'glasses_square') { plotRect(x-(dir==='left'?3:0), y-2, 3, 1, outline); }
-      else if(equip.eyes) { plotRect(x+(dir==='left'?-2:1), y-1,1,1, outline); }
-      plotRect(x-3*flip,y+1,6*flip,4,shirtColor);
-      if(equip.body === 'suit'){ plotRect(x-(dir==='left'?3:-3),y+1,1,4,outline); }
-      if(state === 'idle'){
-        plotRect(x-3*flip,y+5,2*flip,3,pantsColor); plotRect(x+(dir==='left'?1:-1),y+5,2,3,pantsColor);
-        if (equip.legs === 'boots_rocket') { 
-            plotRect(x-3*flip,y+8,2*flip,2,'#7f8c8d'); plotRect(x+(dir==='left'?1:-1),y+8,2,2,'#7f8c8d');
-        } else if (equip.legs === 'boots_hover') {
-            plotRect(x-3*flip,y+7,2*flip,2,'#3498db'); plotRect(x+(dir==='left'?1:-1),y+7,2,2,'#3498db');
-        } else {
-            plotRect(x-3*flip,y+8,2*flip,1,shoes); plotRect(x+(dir==='left'?1:-1),y+8,2,1,shoes);
-        }
-      }
-    }
-  }
-
-  function drawFashionNpc(px, py) {
-    drawDude(px, py, 'down', {head: 'cap_red', eyes: 'sunglasses', body: 'jacket_flame'}, 'idle');
-    const x = Math.round(px), y = Math.round(py);
-    plotRect(x-3, y-7, 6, 2, '#9b59b6'); // Spiky hair
-    plotRect(x-4, y-5, 8, 2, '#9b59b6');
-  }
-
-  function plotRect(px,py,w,h,color,alpha=1){
-    ctx.globalAlpha = alpha; ctx.fillStyle = color;
-    ctx.fillRect(px,py,w,h);
-    ctx.globalAlpha = 1;
-  }
- 
-  function drawPet(px, py, dir, state) {
-      const x = Math.round(px), y = Math.round(py);
-      const bodyWhite = '#f1f2f6', bodyBlack = '#2f3542', collar = '#e84118', eyeColor = '#000';
-     
-      plotRect(x-4, y-2, 8, 6, bodyWhite); // body
-      plotRect(x-2, y-5, 4, 3, bodyWhite); // head
-      plotRect(x-3, y-6, 2, 1, bodyBlack); // ears
-      plotRect(x+1, y-6, 2, 1, bodyBlack);
-      plotRect(x-1, y-4, 1, 1, eyeColor); // eyes
-      plotRect(x+1, y-4, 1, 1, eyeColor);
-      plotRect(x-2, y-2, 4, 1, collar); // collar
-      plotRect(x-5, y, 1, 4, bodyBlack); // tail
-      plotRect(x-6, y+3, 1, 1, bodyBlack);
-      plotRect(x, y+1, 3, 3, bodyBlack); // patches
-      plotRect(x-4, y-1, 2, 2, bodyBlack);
-  }
-
-  function drawMap(){
-    ctx.fillStyle = floorPattern; ctx.fillRect(0,0,W,H);
-    const sunX = W - 25, sunY = 25, sunRadius = 10;
-    if (isDay) {
-        ctx.fillStyle = '#f9d71c';
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * (2 * Math.PI);
-            const x1 = sunX + Math.cos(angle) * (sunRadius + 2);
-            const y1 = sunY + Math.sin(angle) * (sunRadius + 2);
-            const x2 = sunX + Math.cos(angle - 0.1) * (sunRadius + 8);
-            const y2 = sunY + Math.sin(angle - 0.1) * (sunRadius + 8);
-            const x3 = sunX + Math.cos(angle + 0.1) * (sunRadius + 8);
-            const y3 = sunY + Math.sin(angle + 0.1) * (sunRadius + 8);
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.lineTo(x3, y3);
-            ctx.closePath();
-            ctx.fill();
-        }
-        ctx.fillStyle = '#ffeaa7'; ctx.beginPath(); ctx.arc(sunX, sunY, sunRadius, 0, Math.PI * 2); ctx.fill();
-    } else {
-        ctx.fillStyle = '#f1f2f6'; ctx.beginPath(); ctx.arc(W - 22, 22, 10, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
-        ctx.beginPath(); ctx.arc(W - 18, 19, 9, 0, Math.PI * 2); ctx.fill();
-    }
-
-    if (player.scene === 'room') {
-        const { BED, TABLE, CHAIR, DOOR } = SCENES.room;
-        ctx.fillStyle = '#634c3a'; ctx.fillRect(TABLE.x, TABLE.y, TABLE.w, TABLE.h);
-        ctx.fillStyle = '#4d3a2d'; ctx.fillRect(CHAIR.x, CHAIR.y, CHAIR.w, CHAIR.h);
-        ctx.fillStyle = '#3e6a88'; ctx.fillRect(BED.x, BED.y, BED.w, BED.h);
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(BED.x + 3, BED.y + 4, 10, 8);
-        ctx.fillStyle = '#d1d8e0'; ctx.fillRect(BED.x + 3, BED.y + 4, 10, 1);
-        ctx.fillStyle = '#4d3a2d'; ctx.fillRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
-    } else if (player.scene === 'library') {
-        const { LIBRARIAN, FASHION_NPC, DOOR } = SCENES.library;
-        drawDude(LIBRARIAN.x, LIBRARIAN.y, 'down', { body: 'suit' }, 'idle');
-        drawFashionNpc(FASHION_NPC.x, FASHION_NPC.y);
-        ctx.fillStyle = '#4d3a2d'; ctx.fillRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
-    }
-  }
-
-  function drawEffects() {
-    effects.forEach((p, i) => {
-      p.y += p.vy; p.x += p.vx; p.life--;
-      ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
-      ctx.fillStyle = p.color || '#fff';
-      ctx.font = `${p.size}px sans-serif`;
-      ctx.fillText(p.text, p.x, p.y);
-      if (p.life <= 0) effects.splice(i, 1);
-    });
-    ctx.globalAlpha = 1;
-  }
-
-  /* =============================
-     遊戲迴圈與控制
-  ============================= */
-  const keys = new Set();
-  window.addEventListener('keydown',e=>{ if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){ e.preventDefault(); keys.add(e.key); }});
-  window.addEventListener('keyup',e=>keys.delete(e.key));
-
-  const hold = {up:false,down:false,left:false,right:false};
-  dpad.addEventListener('touchstart',onPad,true);
-  dpad.addEventListener('touchend',onPad,true);
-  dpad.addEventListener('touchcancel',onPad,true);
-  function onPad(e){
-    const t = e.target.closest('button'); if (!t) return;
-    e.preventDefault(); const dir = t.dataset.dir;
-    hold[dir] = (e.type==='touchstart');
-  }
- 
-  function isColliding(a, b){ return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
-
-  function findInteraction() {
-      if (player.isLocked) return null;
-      const p_hitbox = {x: player.x-4, y: player.y-8, w: 8, h: 16};
-     
-      if (player.scene === 'room') {
-        const { BED, CHAIR } = SCENES.room;
-        if (isColliding(p_hitbox, { ...BED, x: BED.x-5, w: BED.w+10, y: BED.y-5, h: BED.h+10 })) return BED;
-        if (isColliding(p_hitbox, { ...CHAIR, x: CHAIR.x-5, w: CHAIR.w+10, y: CHAIR.y-5, h: CHAIR.h+10 })) return CHAIR;
-      } else if (player.scene === 'library') {
-          const { LIBRARIAN_INTERACTION_ZONE, FASHION_NPC_INTERACTION_ZONE } = SCENES.library;
-          if (isColliding(p_hitbox, LIBRARIAN_INTERACTION_ZONE)) return SCENES.library.LIBRARIAN;
-          if (isColliding(p_hitbox, FASHION_NPC_INTERACTION_ZONE)) return SCENES.library.FASHION_NPC;
-      }
-      return null;
-  }
-  
-  function updatePet() {
-      if (!pet.visible) return;
-      pet.state_timer--;
-      if (pet.state_timer <= 0) {
-          pet.state = Math.random() < 0.7 ? 'wandering' : 'sitting';
-          pet.state_timer = Math.random() * 180 + 120;
-          const dirs = ['up', 'down', 'left', 'right'];
-          pet.dir = dirs[Math.floor(Math.random() * dirs.length)];
-      }
-
-      if (pet.state === 'wandering') {
-          let dx = 0, dy = 0;
-          if (pet.dir === 'left') dx = -1; if (pet.dir === 'right') dx = 1;
-          if (pet.dir === 'up') dy = -1; if (pet.dir === 'down') dy = 1;
-          pet.x = Math.max(8, Math.min(W-8, pet.x + dx * 0.5));
-          pet.y = Math.max(16, Math.min(H-8, pet.y + dy * 0.5));
-      }
-     
-      if(pet.love_timer > 0) {
-          pet.love_timer--;
-          if (pet.love_timer % 15 === 0) {
-              effects.push({ text: '❤️', x: pet.x, y: pet.y - 8, vx: 0, vy: -0.1, life: 30, maxLife: 30, size: 10, color: '#e74c3c' });
-          }
-      }
-      
-      pet.gold_find_timer--;
-      if (pet.gold_find_timer <= 0) {
-          player.gold += 2;
-          updateDailyStatus();
-          effects.push({ text: '💰+2', x: pet.x, y: pet.y - 8, vx: 0, vy: -0.2, life: 60, maxLife: 60, size: 12, color: 'var(--coin)' });
-          pet.gold_find_timer = Math.random() * 1200 + 1200;
-      }
-  }
-
-  function step(){
-    if (player.sceneTransitionCooldown > 0) player.sceneTransitionCooldown--;
-    const p_hitbox = {x: player.x-4, y: player.y-8, w: 8, h: 16};
-
-    if (!player.isLocked) {
-      player.interactionTarget = findInteraction();
-      if (player.interactionTarget) {
-        interactionBtnContainer.classList.add('visible');
-        useBtn.style.display = 'block';
-        exitBtn.style.display = 'none';
-      } else {
-        interactionBtnContainer.classList.remove('visible');
-      }
-
-      let dx=0, dy=0;
-      if (keys.has('ArrowUp')||hold.up) dy=-1; if (keys.has('ArrowDown')||hold.down) dy=1;
-      if (keys.has('ArrowLeft')||hold.left) dx=-1; if (keys.has('ArrowRight')||hold.right) dx=1;
-     
-      if (player.state === 'idle' && (dx || dy)) {
-          if(dx !== 0) player.dir = dx > 0 ? 'right' : 'left';
-          else if(dy !== 0) player.dir = dy > 0 ? 'down' : 'up';
-         
-          const len = Math.hypot(dx,dy)||1;
-          let nextX = player.x + (dx/len)*player.speed;
-          let nextY = player.y + (dy/len)*player.speed;
-  
-          if(player.scene === 'library') {
-              const { LIBRARIAN, FASHION_NPC } = SCENES.library;
-              if (isColliding({x: nextX-4, y: player.y-8, w:8, h:16}, LIBRARIAN) || isColliding({x: nextX-4, y: player.y-8, w:8, h:16}, FASHION_NPC)) {
-                  nextX = player.x;
-              }
-              if (isColliding({x: player.x-4, y: nextY-8, w:8, h:16}, LIBRARIAN) || isColliding({x: player.x-4, y: nextY-8, w:8, h:16}, FASHION_NPC)) {
-                  nextY = player.y;
-              }
-          }
-         
-          const { DOOR: roomDoor } = SCENES.room;
-          if (player.scene === 'room' && isColliding({x:nextX-4, y:nextY-8, w:8, h:16}, roomDoor)) {
-            player.scene = 'library'; player.x = SCENES.library.DOOR.x + SCENES.library.DOOR.w/2; player.y = SCENES.library.DOOR.y - 16;
-            player.sceneTransitionCooldown = 30;
-          }
-
-          const { DOOR: libDoor } = SCENES.library;
-          if (player.scene === 'library' && isColliding({x:nextX-4, y:nextY-8, w:8, h:16}, libDoor)) {
-            player.scene = 'room'; player.x = SCENES.room.DOOR.x + SCENES.room.DOOR.w/2; player.y = SCENES.room.DOOR.y + 26;
-            player.sceneTransitionCooldown = 30;
-          }
-
-          player.x = Math.max(8, Math.min(W-8, nextX));
-          player.y = Math.max(16, Math.min(H-8, nextY));
-          player.movedSinceLastSave = true;
-      }
-     
-      const pet_hitbox = {x: pet.x-4, y: pet.y-4, w: 8, h: 8};
-      if (pet.visible && player.scene === 'room' && isColliding(p_hitbox, pet_hitbox)) {
-          player.x -= (dx||0) * 1.5;
-          player.y -= (dy||0) * 1.5;
-          pet.state = 'sitting';
-          pet.state_timer = 60; 
-          pet.love_timer = 60;
-      }
-    } else { // if player isLocked
-        interactionBtnContainer.classList.add('visible');
-        useBtn.style.display = 'none';
-        exitBtn.style.display = 'block';
-    }
-
-    if (player.state === 'sleeping' && Math.random() < 0.05) {
-      effects.push({ text: Math.random() < 0.5 ? 'z' : 'Z', x: player.x + 8, y: player.y - 2, vx: Math.random() * 0.2 - 0.1, vy: -0.2, life: 80, maxLife: 80, size: Math.random() * 4 + 8 });
-    }
-    
-    if(player.scene === 'room') updatePet();
-   
-    ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0,0,W,H);
-    drawMap();
-    if(player.scene === 'room' && pet.visible) drawPet(pet.x, pet.y, pet.dir, pet.state);
-    drawDude(player.x, player.y, player.dir, player.equip, player.state);
-    
-    // Draw names
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.shadowColor = "rgba(0,0,0,0.5)";
-    ctx.shadowBlur = 2;
-    if (player.name) {
-        ctx.font = '9px sans-serif';
-        ctx.fillText(player.name, player.x, player.y + 18);
-    }
-    if (player.scene === 'library') {
-        ctx.font = '10px sans-serif';
-        const { LIBRARIAN, FASHION_NPC } = SCENES.library;
-        ctx.fillText(t('npc_bookstore_name'), LIBRARIAN.x, LIBRARIAN.y + 16);
-        ctx.fillText(t('npc_fashion_store_name'), FASHION_NPC.x, FASHION_NPC.y + 16);
-    }
-    ctx.textAlign = 'left';
-    ctx.shadowBlur = 0;
-    
-    drawEffects();
-    requestAnimationFrame(step);
-  }
-
-  /* =============================
-     狀態存取
-  ============================= */
-  function saveState(){
-    try {
-      const state = { x: player.x, y: player.y, equip: player.equip, unlockedItems: [...player.unlockedItems], inventory: [...player.inventory], gold: player.gold, scene: player.scene, lang: currentLang, name: player.name };
-      localStorage.setItem('book-rpg-state-v7', JSON.stringify(state));
-    } catch(e) { console.warn("無法儲存狀態:", e); }
-  }
-
-  function loadState(){
-    try {
-      const savedState = localStorage.getItem('book-rpg-state-v7');
-      if (savedState) {
-        const state = JSON.parse(savedState);
-        if (state.name) player.name = state.name;
-        delete state.name;
-        Object.assign(player, state);
-        player.unlockedItems = new Set(state.unlockedItems);
-        player.inventory = new Set(state.inventory);
-      }
-    } catch(e) { console.warn("無法讀取狀態:", e); localStorage.removeItem('book-rpg-state-v7'); }
-  }
-
-  /* =============================
-     每日功能
-  ============================= */
-  const answerBtn = $('#answerBtn');
-  const drawEquipBtn = $('#drawEquipBtn');
-  const resetCountdownEl = $('#resetCountdown');
-
-  function todayKey(){
-    const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
-  function nextMidnight(){ const d = new Date(); d.setHours(24,0,0,0); return d; }
-  function seededRandom(seed) { let x = Math.sin(seed) * 10000; return x - Math.floor(x); }
- 
-  function updateDailyStatus(){
-      const key = todayKey();
-      answerBtn.textContent = (localStorage.getItem('daily.usedAt') === key) ? t('btn_answer_done') : t('btn_answer');
-      drawEquipBtn.disabled = localStorage.getItem('daily.equipDrawnAt') === key;
-      drawEquipBtn.textContent = drawEquipBtn.disabled ? t('btn_draw_done') : t('btn_draw_equip');
-      $('#goldDisplay').textContent = player.gold;
-  }
- 
-  function updateCountdown(){
-    const remain = nextMidnight() - new Date();
-    if (remain <= 1000) { 
-      localStorage.removeItem('daily.usedAt'); localStorage.removeItem('daily.answerSeed'); localStorage.removeItem('daily.equipDrawnAt');
-      setTimeout(updateDailyStatus, 2000); 
-    }
-    resetCountdownEl.textContent = msToHMS(Math.max(0,remain));
-  }
-
-  function msToHMS(ms){
-    const s = Math.floor(ms/1000);
-    const hh = String(Math.floor(s/3600)).padStart(2,'0'); const mm = String(Math.floor((s%3600)/60)).padStart(2,'0'); const ss = String(s%60).padStart(2,'0');
-    return `${hh}:${mm}:${ss}`;
-  }
-  function showHint(text){ msgBox.innerHTML = `<div>${text}</div>`; }
-
-  function pickDailyAnswer(seed) {
-      const s1 = t('answer_A')[Math.floor(seededRandom(seed + 1) * t('answer_A').length)]; const s2 = t('answer_B')[Math.floor(seededRandom(seed + 2) * t('answer_B').length)];
-      const s3 = t('answer_C')[Math.floor(seededRandom(seed + 3) * t('answer_C').length)]; const t1 = t('answer_tags')[Math.floor(seededRandom(seed + 4) * t('answer_tags').length)];
-      const t2 = t('answer_tags')[Math.floor(seededRandom(seed + 5) * t('answer_tags').length)];
-      return `${s1} ${s2} ${s3} ${t1} ${t2}`;
-  }
-
-  function onAnswerBtnClick(){
-      const key = todayKey();
-      let seed = localStorage.getItem('daily.answerSeed');
-     
-      if (localStorage.getItem('daily.usedAt') !== key) {
-          localStorage.setItem('daily.usedAt', key);
-          seed = String(Date.now() + Math.random());
-          localStorage.setItem('daily.answerSeed', seed);
-          player.gold += 5;
-          saveState();
-      }
-     
-      const s = pickDailyAnswer(Number(seed));
-      showHint(`<b>${t('answer_title')}：</b>${s}`);
-      updateDailyStatus();
-  }
-
-  function onDrawEquipBtnClick() {
-    const key = todayKey(); if (localStorage.getItem('daily.equipDrawnAt') === key) return;
-    localStorage.setItem('daily.equipDrawnAt', key);
-    const unlockable = ALL_EQUIPMENT.filter(item => !player.unlockedItems.has(item.id) && !item.isSpecial);
-    if(unlockable.length === 0){ showHint(t('hint_all_items')); updateDailyStatus(); return; }
-   
-    const newItem = unlockable[Math.floor(Math.random() * unlockable.length)];
-    player.unlockedItems.add(newItem.id);
-    saveState();
-    renderAllSheets();
-    showHint(t('hint_new_item', {itemName: t(newItem.nameKey)}));
-    updateDailyStatus();
-  }
-
-  /* =============================
-     UI & 面板管理
-  ============================= */
-  function togglePanel(panelId, forceOpen) {
-      document.querySelectorAll('.sheet').forEach(sheet => {
-          const isOpen = forceOpen !== undefined ? forceOpen : !sheet.classList.contains('open');
-          if (sheet.id === panelId) {
-              sheet.classList.toggle('open', isOpen);
-              if (isOpen) {
-                 renderAllSheets();
-                 if (panelId === 'nameSheet') {
-                    $('#nameInput').value = player.name;
-                    $('#nameInput').focus();
-                 }
-              }
-          } else {
-              sheet.classList.remove('open');
-          }
-      });
-  }
- 
-  function renderAllSheets() {
-      if ($('#gearSheet').classList.contains('open')) renderGearSheet();
-      if ($('#petSheet').classList.contains('open')) renderPetSheet();
-      if ($('#backpackSheet').classList.contains('open')) renderBackpackSheet();
-      if ($('#shopSheet').classList.contains('open')) renderShopSheet();
-      if ($('#fashionShopSheet').classList.contains('open')) renderFashionShopSheet();
-  }
-
-  function renderGearSheet() {
-      const grid = $('#gearGrid'); grid.innerHTML = '';
-      ALL_EQUIPMENT.forEach(item => {
-          if (player.unlockedItems.has(item.id)) {
-              const isEquipped = player.equip[item.type] === item.id;
-              grid.innerHTML += `<div class="item"><div><b>${t(item.nameKey)}</b> <span class="badge">${t('type_'+item.type)}</span></div><div class="small">${t(item.descKey)}</div></div><button class="${isEquipped ? 'btn-ok' : ''}" data-equip-id="${item.id}" data-equip-type="${item.type}">${isEquipped ? t('btn_unequip') : t('btn_equip')}</button>`;
-          }
-      });
-  }
-
-  function renderPetSheet() {
-      const grid = $('#petGrid'); grid.innerHTML = '';
-      ALL_PETS.forEach(p => {
-        grid.innerHTML += `<div class="item"><b>${t(p.nameKey)}</b></div><button class="${pet.visible ? 'btn-ok' : ''}" data-pet-id="${p.id}">${pet.visible ? t('btn_unsummon') : t('btn_summon')}</button>`;
-      });
-  }
- 
-  function renderBackpackSheet() {
-      const grid = $('#backpackGrid'); grid.innerHTML = '';
-      let ownedBooks = 0;
-      ALL_BOOKS.forEach(book => {
-        if(player.inventory.has(book.id)){
-          grid.innerHTML += `<div class="item"><b>${t(book.nameKey)}</b></div><button data-book-id="${book.id}">${t('btn_read')}</button>`;
-          ownedBooks++;
-        }
-      });
-      if (ownedBooks === 0) {
-        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--muted);">${t('backpack_empty')}</div>`;
-      }
-  }
-
-  function renderShopSheet() {
-      const grid = $('#shopGrid'); grid.innerHTML = '';
-      ALL_BOOKS.forEach(book => {
-          const owned = player.inventory.has(book.id);
-          grid.innerHTML += `<div class="item"><div><b>${t(book.nameKey)}</b></div><div class="small">${owned ? '' : `${t('btn_buy')} 💰${book.price}`}</div></div><button data-book-id="${book.id}" ${owned ? 'disabled' : ''}>${owned ? t('btn_owned') : t('btn_buy')}</button>`;
-      });
-  }
-
-  function renderFashionShopSheet() {
-      const grid = $('#fashionShopGrid'); grid.innerHTML = '';
-      FASHION_ITEMS.forEach(item => {
-          const owned = player.unlockedItems.has(item.id);
-          grid.innerHTML += `<div class="item"><div><b>${t(item.nameKey)}</b></div><div class="small">${owned ? '' : `${t('btn_buy')} 💰${item.price}`}</div></div><button data-item-id="${item.id}" ${owned ? 'disabled' : ''}>${owned ? t('btn_owned') : t('btn_buy')}</button>`;
-      });
-  }
- 
-  $('#gearGrid').addEventListener('click', e => {
-    const btn = e.target.closest('button[data-equip-id]'); if (!btn) return;
-    const { equipId, equipType } = btn.dataset;
-    player.equip[equipType] = (player.equip[equipType] === equipId) ? null : equipId;
-    saveState(); renderGearSheet();
-  });
- 
-  $('#petGrid').addEventListener('click', e => {
-      const btn = e.target.closest('button[data-pet-id]'); if (!btn) return;
-      pet.visible = !pet.visible;
-      renderPetSheet();
-  });
- 
-  $('#backpackGrid').addEventListener('click', e => {
-      const btn = e.target.closest('button[data-book-id]'); if (!btn) return;
-      const book = ALL_BOOKS.find(b => b.id === btn.dataset.bookId);
-      if (book && player.inventory.has(book.id)) {
-        openBook(book.id);
-      }
-  });
-
-  $('#shopGrid').addEventListener('click', e => {
-      const btn = e.target.closest('button[data-book-id]'); if (!btn) return;
-      const book = ALL_BOOKS.find(b => b.id === btn.dataset.bookId);
-      if (!book || player.inventory.has(book.id)) return;
-
-      if (player.gold >= book.price) {
-          player.gold -= book.price;
-          player.inventory.add(book.id);
-          saveState();
-          updateDailyStatus();
-          renderShopSheet();
-          showHint(t('hint_buy_book', {price: book.price, bookName: t(book.nameKey)}));
-      } else {
-          showHint(t('hint_no_gold'));
-      }
-  });
-  
-  $('#fashionShopGrid').addEventListener('click', e => {
-      const btn = e.target.closest('button[data-item-id]'); if (!btn) return;
-      const item = FASHION_ITEMS.find(i => i.id === btn.dataset.itemId);
-      if (!item || player.unlockedItems.has(item.id)) return;
-
-      if (player.gold >= item.price) {
-          player.gold -= item.price;
-          player.unlockedItems.add(item.id);
-          saveState();
-          updateDailyStatus();
-          renderFashionShopSheet();
-          showHint(t('hint_buy_fashion', {price: item.price, itemName: t(item.nameKey)}));
-      } else {
-          showHint(t('hint_no_gold'));
-      }
-  });
-
-  /* =============================
-     書籍閱讀器
-  ============================= */
-  let currentBook = null;
-  let currentPage = 0;
-  const charsPerPage = 300;
-
-  function openBook(bookId) {
-    currentBook = ALL_BOOKS.find(b => b.id === bookId);
-    if (!currentBook) return;
-    currentPage = 0;
-    $('#bookReader').classList.add('open');
-    renderPage();
-  }
-
-  function renderPage() {
-      const content = t(currentBook.contentKey);
-      const totalPages = Math.ceil(content.length / charsPerPage);
-      const start = currentPage * charsPerPage;
-      const end = start + charsPerPage;
-      $('#bookTitle').textContent = t(currentBook.nameKey);
-      $('#bookContent').textContent = content.substring(start, end);
-      $('#pageIndicator').textContent = `${currentPage + 1} / ${totalPages}`;
-      $('#prevPageBtn').disabled = currentPage === 0;
-      $('#nextPageBtn').disabled = currentPage >= totalPages - 1;
-  }
- 
-  $('#prevPageBtn').addEventListener('click', () => { if(currentPage > 0) { currentPage--; renderPage(); }});
-  $('#nextPageBtn').addEventListener('click', () => { 
-      const content = t(currentBook.contentKey);
-      const totalPages = Math.ceil(content.length / charsPerPage);
-      if (currentPage < totalPages - 1) { currentPage++; renderPage(); }
-  });
-  $('#closeBookBtn').addEventListener('click', () => $('#bookReader').classList.remove('open'));
-
-  /* =============================
-     時間 / 日夜圖示 / 氣溫
-  ============================= */
-  const clockEl = $('#clock'), iconEl  = $('#dayIcon'), tempEl  = $('#temp');
-
-  function tickClock(){
-    const now = new Date();
-    clockEl.textContent = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    isDay = now.getHours()>=6 && now.getHours()<18;
-  }
- 
-  (async function getTemp(){
-    try{
-      if (!navigator.geolocation) return;
-      const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:false,timeout:6000}));
-      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current=temperature_2m&timezone=auto`);
-      if (!r.ok) return; const j = await r.json();
-      const t = Math.round(j?.current?.temperature_2m);
-      if (Number.isFinite(t)) tempEl.textContent = t+"°";
-    }catch(e){ console.warn("無法獲取天氣:", e); }
-  })();
-
-  /* =============================
-     BGM 背景音樂
-  ============================= */
-  let audioCtx;
-  let isMusicPlaying = false;
-  let musicTimeout;
-  let currentNote = 0;
-  const NOTE_FREQ = { 'C4':261.63,'D4':293.66,'E4':329.63,'F4':349.23,'G4':392.00,'A4':440.00,'B4':493.88,'C5':523.25,'rest':0 };
-  const BGM = [
-      {note:'E4', dur:0.2}, {note:'G4', dur:0.2}, {note:'B4', dur:0.2}, {note:'C5', dur:0.4},
-      {note:'D4', dur:0.2}, {note:'G4', dur:0.2}, {note:'B4', dur:0.6}, {note:'rest', dur:0.2},
-      {note:'C4', dur:0.2}, {note:'E4', dur:0.2}, {note:'A4', dur:0.2}, {note:'B4', dur:0.4},
-      {note:'D4', dur:0.2}, {note:'E4', dur:0.2}, {note:'G4', dur:0.6}, {note:'rest', dur:0.2},
-  ];
-
-  function playNote(freq, dur) {
-      if (!audioCtx) return;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.frequency.value = freq;
-      osc.type = 'sine';
-      const now = audioCtx.currentTime;
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
-      gain.gain.linearRampToValueAtTime(0, now + dur - 0.02);
-      osc.start(now);
-      osc.stop(now + dur);
-  }
-
-  function scheduleNextNote() {
-      if (!isMusicPlaying) return;
-      const note = BGM[currentNote];
-      playNote(NOTE_FREQ[note.note], note.dur);
-      currentNote = (currentNote + 1) % BGM.length;
-      musicTimeout = setTimeout(scheduleNextNote, note.dur * 1000);
-  }
-
-  function toggleMusic() {
-      if (!audioCtx) {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
-      if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-      }
-      isMusicPlaying = !isMusicPlaying;
-      const musicBtn = $('#musicBtn');
-      if (isMusicPlaying) {
-          currentNote = 0;
-          scheduleNextNote();
-          musicBtn.style.borderColor = 'var(--accent)';
-      } else {
-          clearTimeout(musicTimeout);
-          musicBtn.style.borderColor = '#3a467c';
-      }
-  }
-
-
-  /* =============================
-     啟動
-  ============================= */
-   
-  loadState();
-  setLanguage(player.lang || 'zh-TW');
-  setInterval(updateCountdown, 1000);
-  updateCountdown();
-  tickClock(); setInterval(tickClock, 1000 * 60);
-  requestAnimationFrame(step);
-
-  $('#langSwitcher').addEventListener('click', () => {
-    const currentIndex = LANG_CYCLE.indexOf(currentLang);
-    const nextIndex = (currentIndex + 1) % LANG_CYCLE.length;
-    setLanguage(LANG_CYCLE[nextIndex]);
-    if (localStorage.getItem('daily.usedAt') === todayKey()) {
-        const seed = localStorage.getItem('daily.answerSeed');
-        const s = pickDailyAnswer(Number(seed));
-        showHint(`<b>${t('answer_title')}：</b>${s}`);
-    }
-  });
-  
-  useBtn.addEventListener('click', () => {
-    if (!player.interactionTarget) return;
-    
-    player.isLocked = true;
-    interactionBtnContainer.classList.add('visible');
-    useBtn.style.display = 'none';
-    exitBtn.style.display = 'block';
-
-    const targetId = player.interactionTarget.id;
-    if (targetId === 'BED') {
-        player.state = 'sleeping';
-        player.x = SCENES.room.BED.x + SCENES.room.BED.w / 2 - 5;
-        player.y = SCENES.room.BED.y + SCENES.room.BED.h / 2;
-        showHint(t('hint_sleep'));
-    } else if (targetId === 'CHAIR') {
-        player.state = 'sitting';
-        player.x = SCENES.room.CHAIR.x + SCENES.room.CHAIR.w / 2;
-        player.y = SCENES.room.CHAIR.y;
-        showHint(t('hint_sit'));
-    } else if (targetId === 'LIBRARIAN') {
-        togglePanel('shopSheet', true);
-        player.isLocked = false; 
-        exitBtn.style.display = 'none';
-        interactionBtnContainer.classList.remove('visible');
-    } else if (targetId === 'FASHION_NPC') {
-        togglePanel('fashionShopSheet', true);
-        player.isLocked = false; 
-        exitBtn.style.display = 'none';
-        interactionBtnContainer.classList.remove('visible');
-    }
-  });
-
-  exitBtn.addEventListener('click', () => {
-      player.isLocked = false;
-      interactionBtnContainer.classList.remove('visible');
-      exitBtn.style.display = 'none';
-      
-      const lastState = player.state;
-      player.state = 'idle';
-      if (lastState === 'sitting') { 
-          player.y = SCENES.room.CHAIR.y + SCENES.room.CHAIR.h + 20; player.dir = 'down'; 
-      } else if (lastState === 'sleeping') { 
-          player.y = SCENES.room.BED.y + SCENES.room.BED.h + 20; player.dir = 'down'; 
-      }
-      player.interactionTarget = null;
-  });
-
-  function fitCanvas(){
-    const r = stage.getBoundingClientRect();
-    const scale = Math.min(r.width/W, r.height/H);
-    map.style.width = `${W*scale|0}px`; map.style.height= `${H*scale|0}px`;
-    map.style.left = `${(r.width - W*scale)/2|0}px`; map.style.top  = `${(r.height - H*scale)/2|0}px`;
-  }
-  new ResizeObserver(fitCanvas).observe(stage);
-  fitCanvas();
-  window.addEventListener('resize', () => {
-    interactionBtnContainer.classList.remove('visible');
-  });
-
-  dpad.style.display = isTouch ? 'block':'none';
-
-  setInterval(() => {
-      if (player.movedSinceLastSave) {
-          saveState();
-          player.movedSinceLastSave = false;
-      }
-  }, 1500);
- 
-  document.querySelectorAll('.close-btn').forEach(btn => {
-      btn.addEventListener('click', () => togglePanel(btn.dataset.panel, false));
-  });
-
-  $('#answerBtn').addEventListener('click', onAnswerBtnClick);
-  $('#drawEquipBtn').addEventListener('click', onDrawEquipBtnClick);
-  $('#petBtn').addEventListener('click', () => togglePanel('petSheet'));
-  $('#backpackBtn').addEventListener('click', () => togglePanel('backpackSheet'));
-  $('#gearBtn').addEventListener('click', () => togglePanel('gearSheet'));
-  $('#nameBtn').addEventListener('click', () => togglePanel('nameSheet'));
-  $('#musicBtn').addEventListener('click', toggleMusic);
-  
-  $('#saveNameBtn').addEventListener('click', () => {
-    const newName = $('#nameInput').value.trim();
-    if (newName) {
-        player.name = newName;
-        saveState();
-        togglePanel('nameSheet', false);
-    }
-  });
-}
-
-// Check if books.js is loaded, then start the game
-if (typeof ALL_BOOKS !== 'undefined' && typeof BOOK_CONTENT !== 'undefined') {
-  initializeGame();
-} else {
-  // Fallback in case the script loading has a delay
-  window.addEventListener('load', initializeGame);
-}
-
-</script>
+<body class="text-gray-800">
+
+    <!-- Header & Navigation -->
+    <header class="bg-blue-700 text-white py-6 px-4 shadow-lg text-center">
+        <h1 class="text-2xl font-bold">緊急救護程序溫習手冊</h1>
+        <p class="text-sm mt-2 opacity-90">完整複核版 (修訂自：空白 2.pdf)</p>
+    </header>
+
+    <nav class="sticky-nav border-b border-gray-200 px-4 py-2 overflow-x-auto whitespace-nowrap">
+        <div class="flex space-x-4 max-w-6xl mx-auto text-sm font-medium">
+            <a href="#bone" class="text-blue-600 hover:text-blue-800">一、基本龍骨</a>
+            <a href="#vitals" class="text-blue-600 hover:text-blue-800">二、注意指數</a>
+            <a href="#airway" class="text-blue-600 hover:text-blue-800">三、氣道/氧氣</a>
+            <a href="#medical" class="text-blue-600 hover:text-blue-800">四、內科方案</a>
+            <a href="#trauma" class="text-blue-600 hover:text-blue-800">五、創傷/疼痛</a>
+            <a href="#ohca" class="text-blue-600 hover:text-blue-800">六、OHCA/工具</a>
+            <a href="#others" class="text-blue-600 hover:text-blue-800">七、其他/錯誤</a>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-6">
+
+        <!-- 一、基本龍骨 -->
+        <section id="bone" class="section-card">
+            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">一、基本龍骨 (Primary Assessment)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-3">
+                    <p><strong>RSE:</strong> 現場環境安全? 武器/針筒/紅帽橙樓；攞料: 抽搐/過敏史/長期聞氣/藥物種類及劑量。</p>
+                    <p><strong>LOC:</strong> A/V 直接叫；P/U 換 PPE。</p>
+                    <p><strong>D (頸椎):</strong> MOI 排除頸椎受傷；懷疑則 <strong>Iron Man 手勢</strong>，Partner 頭鎖。</p>
+                    <p><strong>C (循環):</strong> A/V 摸 Radial；P/U 摸 Carotid (10s)。質量: Strong/Regular/Rapid?</p>
+                </div>
+                <div class="space-y-3">
+                    <p><strong>B (呼吸):</strong> 10s 睇 Quality (Deep/Labor/Shallow)。</p>
+                    <p><strong>A (氣道):</strong> 對答如流則暢通；P/U 指頭打開，有異物 Suction (著PPE)/指挖法；無異物落 OPA/NPA。</p>
+                    <p><strong>O2/RBS:</strong> Oxygen Protocol 介入。檢查傷口、出血量、CSMC、HAT 止血、T-pod。</p>
+                    <p><strong>Skin / Vital:</strong> Flush/Hot/Dry (熱衰竭)；Pale/Cool/Clammy (休克)。</p>
+                </div>
+            </div>
+            <div class="mt-4 p-3 bg-gray-50 rounded border border-gray-200">
+                <p class="font-semibold mb-1">Baseline Vital Sign (Q5):</p>
+                <div class="flex flex-wrap gap-2 text-sm">
+                    <span class="bg-white border px-3 py-1 rounded">1. Pulse</span>
+                    <span class="bg-white border px-3 py-1 rounded">2. BP</span>
+                    <span class="bg-white border px-3 py-1 rounded">3. SpO2</span>
+                    <span class="bg-white border px-3 py-1 rounded">4. RR</span>
+                    <span class="bg-white border px-3 py-1 rounded">5. Skin</span>
+                    <span class="bg-white border px-3 py-1 rounded">6. GCS</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 二、注意指數 -->
+        <section id="vitals" class="section-card">
+            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">二、成人、小童、嬰兒注意指數</h2>
+            <div class="table-container">
+                <table class="text-sm">
+                    <thead>
+                        <tr>
+                            <th>項目</th>
+                            <th>新生嬰兒</th>
+                            <th>嬰兒 (0-1歲)</th>
+                            <th>小童 (1-&lt;8歲)</th>
+                            <th>成人 (≥8歲)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="font-semibold">BVM 頻率</td>
+                            <td>40/min</td>
+                            <td>30/min</td>
+                            <td>1-3歲: 25; 3-8歲: 20</td>
+                            <td>10/min</td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold">BVM 介入指標</td>
+                            <td>HR 60-99</td>
+                            <td>RR ≤ 29</td>
+                            <td>1-3歲: ≤24; 3-8歲: ≤19</td>
+                            <td>RR <10 或 >29</td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold">CPR 介入指標</td>
+                            <td>HR <60</td>
+                            <td colspan="2" class="text-center">HR <60 + 皮膚發紺 + 昏迷</td>
+                            <td>無脈搏</td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold">按壓深度</td>
+                            <td colspan="3" class="text-center">1/3 - 1/2 胸部深度</td>
+                            <td>5-6 cm</td>
+                        </tr>
+                        <tr>
+                            <td class="font-semibold">CPR 比例</td>
+                            <td>3:1</td>
+                            <td colspan="2">單人 30:2 / 雙人 15:2</td>
+                            <td>30:2 (LMA後不停)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 三、人工氣道與氧氣治療 -->
+        <section id="airway" class="section-card">
+            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">三、人工氣道與氧氣治療</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-bold text-gray-700 mb-2">測量與禁忌</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li class="p-2 border-l-4 border-blue-500 bg-blue-50">
+                            <strong>OPA:</strong> 凸緣對嘴角, 末端對頜角; <span class="text-red-600">禁忌: 口腔嚴重受傷、&lt;1歲</span>
+                        </li>
+                        <li class="p-2 border-l-4 border-blue-500 bg-blue-50">
+                            <strong>NPA:</strong> 鼻窿至耳珠; 男Size 7/女Size 6; <span class="text-red-600">禁忌: 鼻孔受傷、&lt;8歲、顱底骨折</span>
+                        </li>
+                        <li class="p-2 border-l-4 border-blue-500 bg-blue-50">
+                            <strong>Suction:</strong> 人中至頜角; 小童≤5秒、成人≤10秒; <span class="text-red-600">禁忌: &lt;1歲、口腔嚴重受傷</span>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-700 mb-2">Oxygen Protocol 流量指引</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                            <span>Nasal Cannula: <strong>1-4 L</strong></span>
+                            <span class="text-xs text-gray-500">SpO2 ≥ 94% (MI/中風/ROSC)</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                            <span>Simple Mask: <strong>5 L</strong></span>
+                            <span class="text-xs text-gray-500">未著 PPE 前使用</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                            <span>Non-rebreather: <strong>15 L</strong></span>
+                            <span class="text-xs text-gray-500">重症/休克/過敏/SpO2 &lt; 85%</span>
+                        </div>
+                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                            <span>Venturi Mask: <strong>3L / 6L</strong></span>
+                            <span class="text-xs text-gray-500">COPD (維持 SpO2 85-88%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 四、內科醫療方案 -->
+        <section id="medical" class="section-card">
+            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">四、內科醫療方案</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="p-4 bg-green-50 rounded border border-green-200">
+                    <h3 class="font-bold text-green-800">呼吸系統 (Ventolin & Atrovent)</h3>
+                    <p class="text-sm">2-&lt;5歲: 2 Puffs | 5-&lt;12歲: 3 Puffs | ≥12歲: 4 Puffs</p>
+                    <p class="text-sm mt-1"><strong>Atrovent:</strong> ≥12歲 2 Puffs (限一次)</p>
+                </div>
+                <div class="p-4 bg-red-50 rounded border border-red-200">
+                    <h3 class="font-bold text-red-800">心源性胸痛 (Aspirin 200mg)</h3>
+                    <p class="text-sm"><span class="font-bold">禁忌:</span> &lt;12歲、出血、手術、LVAD、過敏</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-gray-50 p-4 rounded border">
+                    <h3 class="font-bold border-b mb-2">低血容積性休克 (NS)</h3>
+                    <ul class="text-sm list-disc list-inside">
+                        <li>BP ≥ 90: 100 ml/hr</li>
+                        <li>BP < 90: 500ml/FR (最多2次)；其後: 500ml/hr</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded border">
+                    <h3 class="font-bold border-b mb-2">血糖異常</h3>
+                    <ul class="text-sm space-y-1">
+                        <li><strong>高血糖 (>20):</strong> NS 500 ml @ 200 ml/hr</li>
+                        <li><strong>低血糖 (≤4.0):</strong> D10W 口服 200ml / IV 100ml; 5分鐘可重複; + Thiamine 50mg</li>
+                        <li><strong>靜脈困難:</strong> 用 Glucagon 1mg (≥12歲)</li>
+                    </ul>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="p-3 border rounded bg-indigo-50">
+                        <h4 class="font-bold">麻醉劑中毒 (Naloxone 0.4mg IMI)</h4>
+                        <p>指標: Pinpoint Pupil + 呼吸抑制; ≥12歲</p>
+                    </div>
+                    <div class="p-3 border rounded bg-yellow-50">
+                        <h4 class="font-bold">全身性抽搐 (Midazolam)</h4>
+                        <p>≥50kg: 10mg IN; 5分鐘後5mg</p>
+                        <p>< 50kg: 7.5mg; 5分鐘後3.75mg</p>
+                        <p>兒童: 0.2mg/kg; 第二劑半量</p>
+                    </div>
+                </div>
+
+                <div class="bg-pink-50 p-4 rounded border border-pink-200">
+                    <h3 class="font-bold text-pink-800 mb-2">嚴重過敏 (Anaphylaxis)</h3>
+                    <p class="text-sm font-semibold">診斷: 皮膚症狀 + 呼吸道阻塞 / SBP < 90</p>
+                    <div class="grid grid-cols-2 gap-2 text-sm mt-2">
+                        <div class="p-2 bg-white rounded">Adrenaline: 成人0.3mg/小童0.15mg IMI (5min可重)</div>
+                        <div class="p-2 bg-white rounded">Piriton: 10mg IMI (≥12歲)</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="p-3 border rounded">
+                        <h4 class="font-bold">活性碳 (Activated Charcoal)</h4>
+                        <p>2小時內過量、GCS 15、無嘔吐; <strong>需致電 HKPIC</strong>; 50g; &lt;12歲禁用</p>
+                    </div>
+                    <div class="p-3 border rounded">
+                        <h4 class="font-bold">Olanzapine Protocol</h4>
+                        <p>適應症: 興奮譫妄、攻擊行為; 劑量: 10mg IMI</p>
+                        <p class="text-xs text-red-500">注意: 需警員協助、監察體溫</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 五、創傷、疼痛與特殊程序 -->
+        <section id="trauma" class="section-card">
+            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">五、創傷、疼痛與特殊程序</h2>
+            
+            <div class="bg-red-50 p-4 rounded border border-red-200 mb-4">
+                <h3 class="font-bold text-red-800 mb-2">創傷中心分流指標 (Trauma Diversion)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div>
+                        <p class="font-bold underline">MOI 能量</p>
+                        <p>墜落成人>6m/小童>3m; 車輛彈出; 同車死亡; 槍傷</p>
+                    </div>
+                    <div>
+                        <p class="font-bold underline">生理 Physiology</p>
+                        <p>GCS ≤ 13; SBP < 90; RR < 10 或 > 29</p>
+                    </div>
+                    <div>
+                        <p class="font-bold underline">解剖 Anatomy</p>
+                        <p>連枷胸、雙長骨骨折、近端斷肢、穿透傷、癱瘓、盆骨骨折、≥20%二級燒傷</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="p-3 bg-white border rounded">
+                    <h4 class="font-bold text-blue-800">TXA</h4>
+                    <p class="text-xs">嚴重創傷出血、SBP<90、3小時內; 100mg/min × 10次</p>
+                </div>
+                <div class="p-3 bg-white border rounded">
+                    <h4 class="font-bold text-blue-800">Penthrox</h4>
+                    <p class="text-xs">≥12歲、SBP≥90; 3ml 吸入</p>
+                </div>
+                <div class="p-3 bg-white border rounded">
+                    <h4 class="font-bold text-blue-800">Tramadol</h4>
+                    <p class="text-xs">≥18歲、清醒、劇痛; ≥50kg 75mg / <50kg 50mg IMI</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded border">
+                <h3 class="font-bold mb-2">脊椎固定 (Modified Nexus Criteria)</h3>
+                <p class="text-xs mb-2 italic">任一陽性 → Full SMR:</p>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs font-semibold">
+                    <div class="bg-white p-2 border rounded">1. &lt;12 或 ≥65歲</div>
+                    <div class="bg-white p-2 border rounded">2. 神經缺乏</div>
+                    <div class="bg-white p-2 border rounded">3. 脊柱壓痛/畸形</div>
+                    <div class="bg-white p-2 border rounded">4. 意識改變</div>
+                    <div class="bg-white p-2 border rounded">5. 分散注意力傷勢</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 六、心臟驟停與工具 -->
+        <section id="ohca" class="section-card">
+            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">六、心臟驟停與工具</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-bold text-red-700 mb-2">OHCA 藥物</h3>
+                    <ul class="text-sm space-y-2">
+                        <li class="p-2 bg-red-50 rounded"><strong>Adrenaline 1:10000:</strong> 1mg IV/IO, 每3-5分鐘, 最多5次</li>
+                        <li class="p-2 bg-red-50 rounded"><strong>Amiodarone:</strong> 首劑 300mg, 第二劑 150mg; 最多2次</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-gray-700 mb-2">設備使用</h3>
+                    <ul class="text-sm space-y-2">
+                        <li><strong>LMA:</strong> ≥12歲、無脈搏; 3號 35ml / 4-5號 45ml</li>
+                        <li><strong>ACCM:</strong> ≥8歲 (≥115cm); 禁忌: 懷孕、胸外傷、爆炸風險</li>
+                        <li><strong>HAT 止血帶:</strong> 傷口 ≥5cm 近端使用; 可並排第二條</li>
+                        <li><strong>HD 止血敷料:</strong> <span class="text-red-500 font-bold underline">眼 / 腦 / 脊椎 禁用</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 七、重溫有用資訊 -->
+        <section id="others" class="section-card">
+            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">七、重溫有用資訊</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-bold mb-2">GCS (E4 V5 M6)</h3>
+                    <h3 class="font-bold mt-4 mb-2">燒傷 9 分法 (Rule of 9)</h3>
+                    <ul class="text-sm grid grid-cols-2 gap-x-4">
+                        <li>前軀幹: 18%</li>
+                        <li>後軀幹: 18%</li>
+                        <li>頭頸: 9%</li>
+                        <li>雙上肢各: 9%</li>
+                        <li>會陰: 1%</li>
+                        <li class="col-span-2 text-red-600 font-bold mt-1">≥20% 二級燒傷 → 創傷中心</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold mb-2">IV 併發症 (七宗罪)</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="protocol-tag bg-info">1. 體液外滲</span>
+                        <span class="protocol-tag bg-info">2. 血栓/靜脈炎</span>
+                        <span class="protocol-tag bg-info">3. 感染</span>
+                        <span class="protocol-tag bg-info">4. 循環負荷過重</span>
+                        <span class="protocol-tag bg-info">5. 過敏</span>
+                        <span class="protocol-tag bg-info">6. 導管栓塞</span>
+                        <span class="protocol-tag bg-info">7. 空氣栓塞</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 八、常見錯誤覆核 -->
+            <div class="mt-8">
+                <h2 class="text-xl font-bold text-orange-700 mb-4 border-b-2 border-orange-100 pb-2">八、常見錯誤覆核</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div class="p-3 bg-orange-50 border-l-4 border-orange-500">
+                        <p class="font-bold mb-1">評估 & 藥物</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>無攞料、未著 PPE、離場前無 4-Lead/Hstix</li>
+                            <li>未問過敏、未記時間</li>
+                            <li>Midazolam <span class="font-bold text-red-600">未多抽 0.1ml</span></li>
+                        </ul>
+                    </div>
+                    <div class="p-3 bg-orange-50 border-l-4 border-orange-500">
+                        <p class="font-bold mb-1">創傷 & 其他</p>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li>SMR 前後無 CSMC</li>
+                            <li>止血帶落關節、剷床露出四窿</li>
+                            <li>孕婦未左側臥、麻醉劑個案未執藥樽</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-800 text-gray-400 py-6 text-center text-xs">
+        <p>© 2025 EMS Protocol Review Assistant</p>
+        <p class="mt-1">請確保所有救護操作符合當前最新官方指引</p>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('nav a').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                const offset = 60; // Adjust for sticky nav height
+                const elementPosition = targetElement.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
 </body>
 </html>
 
+```
