@@ -1,410 +1,437 @@
+```html
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>緊急救護程序溫習手冊</title>
+    <title>緊急救護程序專業溫習手冊 (Bilingual EMS Manual)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --medical-blue: #1e40af;
+            --medical-red: #dc2626;
+        }
         body {
-            font-family: 'Noto Sans TC', sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc;
         }
-        .section-card {
-            background: white;
-            border-radius: 0.75 m;
+        .nav-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(30, 64, 175, 0.2);
+        }
+        .nav-btn:hover {
+            transform: translateY(-2px);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background-color: #eff6ff;
+        }
+        .section-header {
+            border-left: 4px solid var(--medical-blue);
+            padding-left: 1rem;
             margin-bottom: 1.5rem;
-            padding: 1.5rem;
         }
-        .sticky-nav {
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(8px);
+        .term-en {
+            color: #64748b;
+            font-size: 0.85em;
+            font-style: italic;
+            font-weight: 400;
         }
-        .protocol-tag {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            margin-right: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .bg-danger { background-color: #fee2e2; color: #991b1b; }
-        .bg-warning { background-color: #fef3c7; color: #92400e; }
-        .bg-success { background-color: #d1fae5; color: #065f46; }
-        .bg-info { background-color: #dbeafe; color: #1e40af; }
-        
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #e5e7eb; padding: 0.75rem; text-align: left; }
-        th { background-color: #f9fafb; font-weight: 600; }
-        
-        @media (max-width: 640px) {
-            .table-container { overflow-x: auto; }
+        .table-alt tr:nth-child(even) { background-color: #f1f5f9; }
+        .danger-zone {
+            border: 1px solid #fee2e2;
+            background-color: #fffafb;
         }
     </style>
 </head>
-<body class="text-gray-800">
+<body class="text-slate-900 leading-relaxed">
 
-    <!-- Header & Navigation -->
-    <header class="bg-blue-700 text-white py-6 px-4 shadow-lg text-center">
-        <h1 class="text-2xl font-bold">緊急救護程序溫習手冊</h1>
-        <p class="text-sm mt-2 opacity-90">EMA</p>
+    <!-- Header -->
+    <header class="bg-slate-900 text-white py-8 px-4 shadow-xl">
+        <div class="max-w-6xl mx-auto text-center">
+            <h1 class="text-3xl font-extrabold tracking-tight">緊急救護程序專業溫習手冊</h1>
+            <p class="text-slate-400 mt-2 text-lg">Emergency Medical Services Protocol Handbook (Bilingual)</p>
+        </div>
     </header>
 
-    <nav class="sticky-nav border-b border-gray-200 px-4 py-2 overflow-x-auto whitespace-nowrap">
-        <div class="flex space-x-4 max-w-6xl mx-auto text-sm font-medium">
-            <a href="#bone" class="text-blue-600 hover:text-blue-800">一、基本龍骨</a>
-            <a href="#vitals" class="text-blue-600 hover:text-blue-800">二、注意指數</a>
-            <a href="#airway" class="text-blue-600 hover:text-blue-800">三、氣道/氧氣</a>
-            <a href="#medical" class="text-blue-600 hover:text-blue-800">四、內科方案</a>
-            <a href="#trauma" class="text-blue-600 hover:text-blue-800">五、創傷/疼痛</a>
-            <a href="#ohca" class="text-blue-600 hover:text-blue-800">六、OHCA/工具</a>
-            <a href="#others" class="text-blue-600 hover:text-blue-800">七、其他/錯誤</a>
+    <!-- Interactive Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-6xl mx-auto p-2 overflow-x-auto">
+            <div class="flex space-x-2 min-w-max">
+                <a href="#primary" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold text-blue-800 bg-white">基本評估 Primary</a>
+                <a href="#vitals" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold text-blue-800 bg-white">注意指數 Indicators</a>
+                <a href="#airway" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold text-blue-800 bg-white">氣道管理 Airway</a>
+                <a href="#medical" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold text-blue-800 bg-white">內科方案 Medical</a>
+                <a href="#trauma" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold text-blue-800 bg-white">創傷方案 Trauma</a>
+                <a href="#ohca" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold text-blue-800 bg-white">心臟驟停 OHCA</a>
+                <a href="#review" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold text-blue-800 bg-white">覆核 Checklist</a>
+            </div>
         </div>
     </nav>
 
-    <main class="max-w-6xl mx-auto p-4 md:p-6">
+    <main class="max-w-6xl mx-auto p-4 md:p-8 space-y-12">
 
-        <!-- 一、基本龍骨 -->
-        <section id="bone" class="section-card">
-            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">一、基本龍骨 (Primary Assessment)</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-3">
-                    <p><strong>RSE:</strong> 現場環境安全? 武器/針筒/紅帽橙樓；攞料: 抽搐/過敏史/長期聞氣/藥物種類及劑量。</p>
-                    <p><strong>LOC:</strong> A/V 直接叫；P/U 換 PPE。</p>
-                    <p><strong>D (頸椎):</strong> MOI 排除頸椎受傷；懷疑則 <strong>Iron Man 手勢</strong>，Partner 頭鎖。</p>
-                    <p><strong>C (循環):</strong> A/V 摸 Radial；P/U 摸 Carotid (10s)。質量: Strong/Regular/Rapid?</p>
-                </div>
-                <div class="space-y-3">
-                    <p><strong>B (呼吸):</strong> 10s 睇 Quality (Deep/Labor/Shallow)。</p>
-                    <p><strong>A (氣道):</strong> 對答如流則暢通；P/U 指頭打開，有異物 Suction (著PPE)/指挖法；無異物落 OPA/NPA。</p>
-                    <p><strong>O2/RBS:</strong> Oxygen Protocol 介入。檢查傷口、出血量、CSMC、HAT 止血、T-pod。</p>
-                    <p><strong>Skin / Vital:</strong> Flush/Hot/Dry (熱衰竭)；Pale/Cool/Clammy (休克)。</p>
-                </div>
+        <!-- 一、基本龍骨 (基本評估) -->
+        <section id="primary" class="bg-white rounded-2xl shadow-sm p-6 md:p-8 border border-slate-100">
+            <div class="section-header">
+                <h2 class="text-2xl font-bold text-slate-800">一、基本評估程序 <span class="term-en">Primary Assessment (Bone Structure)</span></h2>
             </div>
-            <div class="mt-4 p-3 bg-gray-50 rounded border border-gray-200">
-                <p class="font-semibold mb-1">Baseline Vital Sign (Q5):</p>
-                <div class="flex flex-wrap gap-2 text-sm">
-                    <span class="bg-white border px-3 py-1 rounded">1. Pulse</span>
-                    <span class="bg-white border px-3 py-1 rounded">2. BP</span>
-                    <span class="bg-white border px-3 py-1 rounded">3. SpO2</span>
-                    <span class="bg-white border px-3 py-1 rounded">4. RR</span>
-                    <span class="bg-white border px-3 py-1 rounded">5. Skin</span>
-                    <span class="bg-white border px-3 py-1 rounded">6. GCS</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="font-bold text-blue-700">RSE: 現場安全及資料搜集 <span class="term-en">Scene Safety & Info Gathering</span></h3>
+                        <p class="text-sm mt-1">評估現場環境安全、是否存在武器/針筒等威脅。收集病史：抽搐史、過敏史、長期氧氣治療、藥物種類及劑量。</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-blue-700">LOC: 意識水平評估 <span class="term-en">Level of Consciousness</span></h3>
+                        <p class="text-sm mt-1">A/V：直接呼喚病人；P/U：必須穿妥個人防護裝備 (PPE)。</p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-blue-700">D (Spine): 頸椎保護 <span class="term-en">Cervical Spine Restriction</span></h3>
+                        <p class="text-sm mt-1">根據受傷機制 (MOI) 排除頸椎受傷；若懷疑受傷，執行 <strong>Iron Man 手勢</strong> 並由副手進行頭部固定 (Head Lock)。</p>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="font-bold text-blue-700">ABC 評估 <span class="term-en">Airway, Breathing, Circulation</span></h3>
+                        <p class="text-sm mt-1"><strong>C (Circulation):</strong> A/V 檢查橈動脈 (Radial)；P/U 檢查頸動脈 (Carotid, 10s)。觀察脈搏質量：強/規律/過快？</p>
+                        <p class="text-sm mt-1"><strong>B (Breathing):</strong> 觀察呼吸質量 10s：深/費力/淺。</p>
+                        <p class="text-sm mt-1"><strong>A (Airway):</strong> 對答流暢代表氣道暢通；P/U 執行指頭法打開氣道。若有異物使用抽吸器 (Suction) 或指挖法 (Finger Sweep)；無異物則放置口咽 (OPA) 或鼻咽氣道 (NPA)。</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <p class="font-bold text-slate-700 mb-2">基礎生命徵象評估 <span class="term-en">Baseline Vital Signs (Q5)</span></p>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-medium">
+                            <span class="bg-white p-2 border rounded shadow-sm">1. 脈搏 Pulse</span>
+                            <span class="bg-white p-2 border rounded shadow-sm">2. 血壓 BP</span>
+                            <span class="bg-white p-2 border rounded shadow-sm">3. 血氧 SpO2</span>
+                            <span class="bg-white p-2 border rounded shadow-sm">4. 呼吸率 RR</span>
+                            <span class="bg-white p-2 border rounded shadow-sm">5. 皮膚 Skin</span>
+                            <span class="bg-white p-2 border rounded shadow-sm">6. 昏迷指數 GCS</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- 二、注意指數 -->
-        <section id="vitals" class="section-card">
-            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">二、成人、小童、嬰兒注意指數</h2>
-            <div class="table-container">
-                <table class="text-sm">
-                    <thead>
+        <section id="vitals" class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+            <div class="section-header">
+                <h2 class="text-2xl font-bold text-slate-800">二、各年齡層臨床注意指數 <span class="term-en">Age-specific Clinical Indicators</span></h2>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm table-alt">
+                    <thead class="bg-slate-800 text-white">
                         <tr>
-                            <th>項目</th>
-                            <th>新生嬰兒</th>
-                            <th>嬰兒 (0-1歲)</th>
-                            <th>小童 (1-&lt;8歲)</th>
-                            <th>成人 (≥8歲)</th>
+                            <th class="p-3 text-left">項目 Item</th>
+                            <th class="p-3">新生兒 Neonate</th>
+                            <th class="p-3">嬰兒 Infant (0-1y)</th>
+                            <th class="p-3">小童 Child (1-&lt;8y)</th>
+                            <th class="p-3">成人 Adult (≥8y)</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td class="font-semibold">BVM 頻率</td>
-                            <td>40/min</td>
-                            <td>30/min</td>
-                            <td>1-3歲: 25; 3-8歲: 20</td>
-                            <td>10/min</td>
+                            <td class="p-3 font-bold">BVM 頻率 <span class="term-en">Ventilation Rate</span></td>
+                            <td class="text-center">40/min</td>
+                            <td class="text-center">30/min</td>
+                            <td class="text-center">1-3歲: 25; 3-8歲: 20</td>
+                            <td class="text-center">10/min</td>
                         </tr>
                         <tr>
-                            <td class="font-semibold">BVM 介入指標</td>
-                            <td>HR 60-99</td>
-                            <td>RR ≤ 29</td>
-                            <td>1-3歲: ≤24; 3-8歲: ≤19</td>
-                            <td>RR <10 或 >29</td>
+                            <td class="p-3 font-bold">BVM 介入指標 <span class="term-en">BVM Indication</span></td>
+                            <td class="text-center">心率 HR 60-99</td>
+                            <td class="text-center">RR ≤ 29</td>
+                            <td class="text-center">1-3y: ≤24; 3-8y: ≤19</td>
+                            <td class="text-center">RR &lt;10 或 &gt;29</td>
                         </tr>
                         <tr>
-                            <td class="font-semibold">CPR 介入指標</td>
-                            <td>HR <60</td>
-                            <td colspan="2" class="text-center">HR <60 + 皮膚發紺 + 昏迷</td>
-                            <td>無脈搏</td>
+                            <td class="p-3 font-bold">CPR 介入指標 <span class="term-en">CPR Indication</span></td>
+                            <td class="text-center">HR &lt;60</td>
+                            <td colspan="2" class="text-center bg-red-50 font-semibold text-red-700">HR &lt;60 + 發紺 (Cyanosis) + 昏迷</td>
+                            <td class="text-center">無脈搏 Pulseless</td>
                         </tr>
                         <tr>
-                            <td class="font-semibold">按壓深度</td>
-                            <td colspan="3" class="text-center">1/3 - 1/2 胸部深度</td>
-                            <td>5-6 cm</td>
+                            <td class="p-3 font-bold">按壓深度 <span class="term-en">Compression Depth</span></td>
+                            <td colspan="3" class="text-center italic">胸部厚度的 1/3 - 1/2</td>
+                            <td class="text-center">5 - 6 cm</td>
                         </tr>
                         <tr>
-                            <td class="font-semibold">CPR 比例</td>
-                            <td>3:1</td>
-                            <td colspan="2">單人 30:2 / 雙人 15:2</td>
-                            <td>30:2 (LMA後不停)</td>
+                            <td class="p-3 font-bold">CPR 比例 <span class="term-en">Compression Ratio</span></td>
+                            <td class="text-center">3 : 1</td>
+                            <td colspan="2" class="text-center">單人 30:2 / 雙人 15:2</td>
+                            <td class="text-center">30 : 2 (LMA後持續)</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- 三、人工氣道與氧氣治療 -->
-        <section id="airway" class="section-card">
-            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">三、人工氣道與氧氣治療</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <h3 class="font-bold text-gray-700 mb-2">測量與禁忌</h3>
-                    <ul class="space-y-2 text-sm">
-                        <li class="p-2 border-l-4 border-blue-500 bg-blue-50">
-                            <strong>OPA:</strong> 凸緣對嘴角, 末端對頜角; <span class="text-red-600">禁忌: 口腔嚴重受傷、&lt;1歲</span>
-                        </li>
-                        <li class="p-2 border-l-4 border-blue-500 bg-blue-50">
-                            <strong>NPA:</strong> 鼻窿至耳珠; 男Size 7/女Size 6; <span class="text-red-600">禁忌: 鼻孔受傷、&lt;8歲、顱底骨折</span>
-                        </li>
-                        <li class="p-2 border-l-4 border-blue-500 bg-blue-50">
-                            <strong>Suction:</strong> 人中至頜角; 小童≤5秒、成人≤10秒; <span class="text-red-600">禁忌: &lt;1歲、口腔嚴重受傷</span>
-                        </li>
-                    </ul>
+        <!-- 三、人工氣道與氧氣 -->
+        <section id="airway" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+                <div class="section-header">
+                    <h2 class="text-xl font-bold text-slate-800">人工氣道測量與禁忌 <span class="term-en">Airway Adjuncts</span></h2>
                 </div>
-                <div>
-                    <h3 class="font-bold text-gray-700 mb-2">Oxygen Protocol 流量指引</h3>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <span>Nasal Cannula: <strong>1-4 L</strong></span>
-                            <span class="text-xs text-gray-500">SpO2 ≥ 94% (MI/中風/ROSC)</span>
+                <ul class="space-y-4">
+                    <li class="flex flex-col p-3 bg-blue-50 rounded-lg">
+                        <span class="font-bold">口咽氣道 (OPA)</span>
+                        <span class="text-sm">量度：凸緣對嘴角，末端對頜角 (Angle of Mandible)</span>
+                        <span class="text-xs text-red-600 font-bold mt-1">禁忌：口腔嚴重受傷、年齡小於 1 歲</span>
+                    </li>
+                    <li class="flex flex-col p-3 bg-blue-50 rounded-lg">
+                        <span class="font-bold">鼻咽氣道 (NPA)</span>
+                        <span class="text-sm">量度：鼻孔至耳垂；男 Size 7 / 女 Size 6</span>
+                        <span class="text-xs text-red-600 font-bold mt-1">禁忌：鼻孔受傷、小於 8 歲、懷疑顱底骨折 (Basal Skull Fracture)</span>
+                    </li>
+                    <li class="flex flex-col p-3 bg-blue-50 rounded-lg">
+                        <span class="font-bold">抽吸器 (Suction)</span>
+                        <span class="text-sm">量度：人中至頜角；小童≤5秒、成人≤10秒</span>
+                        <span class="text-xs text-red-600 font-bold mt-1">禁忌：小於 1 歲、口腔嚴重受傷</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+                <div class="section-header border-blue-500">
+                    <h2 class="text-xl font-bold text-slate-800">氧氣治療指引 <span class="term-en">Oxygen Protocol</span></h2>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center p-3 border rounded-lg hover:bg-slate-50">
+                        <div>
+                            <p class="font-bold">鼻導管 <span class="term-en">Nasal Cannula</span></p>
+                            <p class="text-xs text-slate-500">SpO2 ≥ 94% (MI/中風/ROSC)</p>
                         </div>
-                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <span>Simple Mask: <strong>5 L</strong></span>
-                            <span class="text-xs text-gray-500">未著 PPE 前使用</span>
+                        <span class="text-blue-700 font-bold">1 - 4 L</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 border rounded-lg hover:bg-slate-50">
+                        <div>
+                            <p class="font-bold">簡易面罩 <span class="term-en">Simple Mask</span></p>
+                            <p class="text-xs text-slate-500">穿妥個人防護裝備前使用</p>
                         </div>
-                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <span>Non-rebreather: <strong>15 L</strong></span>
-                            <span class="text-xs text-gray-500">重症/休克/過敏/SpO2 &lt; 85%</span>
+                        <span class="text-blue-700 font-bold">5 L</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 border rounded-lg hover:bg-slate-50">
+                        <div>
+                            <p class="font-bold">非再呼吸面罩 <span class="term-en">NRM</span></p>
+                            <p class="text-xs text-slate-500">危重、休克、過敏、SpO2 &lt; 85%</p>
                         </div>
-                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <span>Venturi Mask: <strong>3L / 6L</strong></span>
-                            <span class="text-xs text-gray-500">COPD (維持 SpO2 85-88%)</span>
+                        <span class="text-blue-700 font-bold">15 L</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 border rounded-lg hover:bg-slate-50">
+                        <div>
+                            <p class="font-bold">文氏面罩 <span class="term-en">Venturi Mask</span></p>
+                            <p class="text-xs text-slate-500">COPD 患者，維持 SpO2 85-88%</p>
                         </div>
+                        <span class="text-blue-700 font-bold">3L / 6L</span>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- 四、內科醫療方案 -->
-        <section id="medical" class="section-card">
-            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">四、內科醫療方案</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div class="p-4 bg-green-50 rounded border border-green-200">
-                    <h3 class="font-bold text-green-800">呼吸系統 (Ventolin & Atrovent)</h3>
-                    <p class="text-sm">2-&lt;5歲: 2 Puffs | 5-&lt;12歲: 3 Puffs | ≥12歲: 4 Puffs</p>
-                    <p class="text-sm mt-1"><strong>Atrovent:</strong> ≥12歲 2 Puffs (限一次)</p>
-                </div>
-                <div class="p-4 bg-red-50 rounded border border-red-200">
-                    <h3 class="font-bold text-red-800">心源性胸痛 (Aspirin 200mg)</h3>
-                    <p class="text-sm"><span class="font-bold">禁忌:</span> &lt;12歲、出血、手術、LVAD、過敏</p>
-                </div>
+        <section id="medical" class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+            <div class="section-header">
+                <h2 class="text-2xl font-bold text-slate-800">四、內科醫療方案 <span class="term-en">Medical Protocols</span></h2>
             </div>
-
-            <div class="space-y-4">
-                <div class="bg-gray-50 p-4 rounded border">
-                    <h3 class="font-bold border-b mb-2">低血容積性休克 (NS)</h3>
-                    <ul class="text-sm list-disc list-inside">
-                        <li>BP ≥ 90: 100 ml/hr</li>
-                        <li>BP < 90: 500ml/FR (最多2次)；其後: 500ml/hr</li>
-                    </ul>
-                </div>
-
-                <div class="bg-gray-50 p-4 rounded border">
-                    <h3 class="font-bold border-b mb-2">血糖異常</h3>
-                    <ul class="text-sm space-y-1">
-                        <li><strong>高血糖 (>20):</strong> NS 500 ml @ 200 ml/hr</li>
-                        <li><strong>低血糖 (≤4.0):</strong> D10W 口服 200ml / IV 100ml; 5分鐘可重複; + Thiamine 50mg</li>
-                        <li><strong>靜脈困難:</strong> 用 Glucagon 1mg (≥12歲)</li>
-                    </ul>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div class="p-3 border rounded bg-indigo-50">
-                        <h4 class="font-bold">麻醉劑中毒 (Naloxone 0.4mg IMI)</h4>
-                        <p>指標: Pinpoint Pupil + 呼吸抑制; ≥12歲</p>
-                    </div>
-                    <div class="p-3 border rounded bg-yellow-50">
-                        <h4 class="font-bold">全身性抽搐 (Midazolam)</h4>
-                        <p>≥50kg: 10mg IN; 5分鐘後5mg</p>
-                        <p>< 50kg: 7.5mg; 5分鐘後3.75mg</p>
-                        <p>兒童: 0.2mg/kg; 第二劑半量</p>
-                    </div>
-                </div>
-
-                <div class="bg-pink-50 p-4 rounded border border-pink-200">
-                    <h3 class="font-bold text-pink-800 mb-2">嚴重過敏 (Anaphylaxis)</h3>
-                    <p class="text-sm font-semibold">診斷: 皮膚症狀 + 呼吸道阻塞 / SBP < 90</p>
-                    <div class="grid grid-cols-2 gap-2 text-sm mt-2">
-                        <div class="p-2 bg-white rounded">Adrenaline: 成人0.3mg/小童0.15mg IMI (5min可重)</div>
-                        <div class="p-2 bg-white rounded">Piriton: 10mg IMI (≥12歲)</div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div class="p-3 border rounded">
-                        <h4 class="font-bold">活性碳 (Activated Charcoal)</h4>
-                        <p>2小時內過量、GCS 15、無嘔吐; <strong>需致電 HKPIC</strong>; 50g; &lt;12歲禁用</p>
-                    </div>
-                    <div class="p-3 border rounded">
-                        <h4 class="font-bold">Olanzapine Protocol</h4>
-                        <p>適應症: 興奮譫妄、攻擊行為; 劑量: 10mg IMI</p>
-                        <p class="text-xs text-red-500">注意: 需警員協助、監察體溫</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 五、創傷、疼痛與特殊程序 -->
-        <section id="trauma" class="section-card">
-            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">五、創傷、疼痛與特殊程序</h2>
-            
-            <div class="bg-red-50 p-4 rounded border border-red-200 mb-4">
-                <h3 class="font-bold text-red-800 mb-2">創傷中心分流指標 (Trauma Diversion)</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                    <div>
-                        <p class="font-bold underline">MOI 能量</p>
-                        <p>墜落成人>6m/小童>3m; 車輛彈出; 同車死亡; 槍傷</p>
-                    </div>
-                    <div>
-                        <p class="font-bold underline">生理 Physiology</p>
-                        <p>GCS ≤ 13; SBP < 90; RR < 10 或 > 29</p>
-                    </div>
-                    <div>
-                        <p class="font-bold underline">解剖 Anatomy</p>
-                        <p>連枷胸、雙長骨骨折、近端斷肢、穿透傷、癱瘓、盆骨骨折、≥20%二級燒傷</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div class="p-3 bg-white border rounded">
-                    <h4 class="font-bold text-blue-800">TXA</h4>
-                    <p class="text-xs">嚴重創傷出血、SBP<90、3小時內; 100mg/min × 10次</p>
-                </div>
-                <div class="p-3 bg-white border rounded">
-                    <h4 class="font-bold text-blue-800">Penthrox</h4>
-                    <p class="text-xs">≥12歲、SBP≥90; 3ml 吸入</p>
-                </div>
-                <div class="p-3 bg-white border rounded">
-                    <h4 class="font-bold text-blue-800">Tramadol</h4>
-                    <p class="text-xs">≥18歲、清醒、劇痛; ≥50kg 75mg / <50kg 50mg IMI</p>
-                </div>
-            </div>
-
-            <div class="bg-gray-50 p-4 rounded border">
-                <h3 class="font-bold mb-2">脊椎固定 (Modified Nexus Criteria)</h3>
-                <p class="text-xs mb-2 italic">任一陽性 → Full SMR:</p>
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs font-semibold">
-                    <div class="bg-white p-2 border rounded">1. &lt;12 或 ≥65歲</div>
-                    <div class="bg-white p-2 border rounded">2. 神經缺乏</div>
-                    <div class="bg-white p-2 border rounded">3. 脊柱壓痛/畸形</div>
-                    <div class="bg-white p-2 border rounded">4. 意識改變</div>
-                    <div class="bg-white p-2 border rounded">5. 分散注意力傷勢</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 六、心臟驟停與工具 -->
-        <section id="ohca" class="section-card">
-            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">六、心臟驟停與工具</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <h3 class="font-bold text-red-700 mb-2">OHCA 藥物</h3>
-                    <ul class="text-sm space-y-2">
-                        <li class="p-2 bg-red-50 rounded"><strong>Adrenaline 1:10000:</strong> 1mg IV/IO, 每3-5分鐘, 最多5次</li>
-                        <li class="p-2 bg-red-50 rounded"><strong>Amiodarone:</strong> 首劑 300mg, 第二劑 150mg; 最多2次</li>
-                    </ul>
+                <!-- 呼吸系統 -->
+                <div class="p-5 rounded-xl danger-zone border-l-4 border-l-green-600">
+                    <h3 class="font-bold text-green-800 text-lg mb-3">呼吸系統藥物 <span class="term-en">Ventolin & Atrovent</span></h3>
+                    <div class="text-sm space-y-2">
+                        <p><strong>Ventolin 劑量：</strong><br>
+                        2-&lt;5歲：2 Puffs | 5-&lt;12歲：3 Puffs | ≥12歲：4 Puffs</p>
+                        <p><strong>Atrovent 劑量：</strong><br>
+                        ≥12歲：2 Puffs (只限一次給藥)</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="font-bold text-gray-700 mb-2">設備使用</h3>
-                    <ul class="text-sm space-y-2">
-                        <li><strong>LMA:</strong> ≥12歲、無脈搏; 3號 35ml / 4-5號 45ml</li>
-                        <li><strong>ACCM:</strong> ≥8歲 (≥115cm); 禁忌: 懷孕、胸外傷、爆炸風險</li>
-                        <li><strong>HAT 止血帶:</strong> 傷口 ≥5cm 近端使用; 可並排第二條</li>
-                        <li><strong>HD 止血敷料:</strong> <span class="text-red-500 font-bold underline">眼 / 腦 / 脊椎 禁用</span></li>
+                <!-- 心源性胸痛 -->
+                <div class="p-5 rounded-xl danger-zone border-l-4 border-l-red-600">
+                    <h3 class="font-bold text-red-800 text-lg mb-3">心源性胸痛 <span class="term-en">Chest Pain (Aspirin)</span></h3>
+                    <p class="text-sm font-bold">藥物：阿斯匹靈 (Aspirin) 200mg PO</p>
+                    <p class="text-xs mt-2 text-red-700 font-semibold">禁忌症：&lt;12歲、活動性出血、近期手術史、LVAD、藥物過敏</p>
+                </div>
+                <!-- 血糖異常 -->
+                <div class="p-5 rounded-xl border border-slate-200 bg-slate-50 col-span-1 md:col-span-2">
+                    <h3 class="font-bold text-slate-800 mb-3 text-lg">血糖異常管理 <span class="term-en">Glycemia Management</span></h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div class="bg-white p-3 rounded-lg border">
+                            <p class="font-bold text-orange-700">低血糖 (≤4.0 mmol/L)</p>
+                            <ul class="list-disc list-inside mt-1 space-y-1">
+                                <li>D10W：口服 200ml / 靜脈注射 (IV) 100ml</li>
+                                <li>間隔 5 分鐘後可重複</li>
+                                <li>合併給予 維他命B1 (Thiamine) 50mg</li>
+                                <li>靜脈建立困難：使用 升糖素 (Glucagon) 1mg (≥12歲)</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border">
+                            <p class="font-bold text-blue-700">高血糖 (&gt;20.0 mmol/L)</p>
+                            <ul class="list-disc list-inside mt-1 space-y-1">
+                                <li>生理鹽水 (NS) 500 ml</li>
+                                <li>滴注速度：200 ml/hr</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <!-- 抽搐與過敏 -->
+                <div class="p-4 border rounded-xl bg-purple-50">
+                    <h3 class="font-bold text-purple-900 mb-2">全身性抽搐 <span class="term-en">Convulsion (Midazolam)</span></h3>
+                    <p class="text-xs">≥50kg：10mg IN；5分鐘後 5mg</p>
+                    <p class="text-xs mt-1">&lt;50kg：7.5mg IN；5分鐘後 3.75mg</p>
+                    <p class="text-xs mt-1 text-purple-700">兒童：0.2mg/kg (鼻內 IN)；第二劑劑量減半</p>
+                </div>
+                <div class="p-4 border rounded-xl bg-pink-50">
+                    <h3 class="font-bold text-pink-900 mb-2">嚴重過敏 <span class="term-en">Anaphylaxis</span></h3>
+                    <p class="text-xs font-bold">診斷：皮膚症狀 + 呼吸道阻塞 或 收縮壓 (SBP) &lt; 90</p>
+                    <ul class="text-xs mt-2 space-y-1">
+                        <li><strong>腎上腺素 (Adrenaline):</strong> 成人0.3mg/小童0.15mg IMI (5分鐘可重)</li>
+                        <li><strong>抗組織胺 (Piriton):</strong> 10mg IMI (≥12歲)</li>
                     </ul>
                 </div>
             </div>
         </section>
 
-        <!-- 七、重溫有用資訊 -->
-        <section id="others" class="section-card">
-            <h2 class="text-xl font-bold text-blue-700 mb-4 border-b-2 border-blue-100 pb-2">七、重溫有用資訊</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <h3 class="font-bold mb-2">GCS (E4 V5 M6)</h3>
-                    <h3 class="font-bold mt-4 mb-2">燒傷 9 分法 (Rule of 9)</h3>
-                    <ul class="text-sm grid grid-cols-2 gap-x-4">
-                        <li>前軀幹: 18%</li>
-                        <li>後軀幹: 18%</li>
-                        <li>頭頸: 9%</li>
-                        <li>雙上肢各: 9%</li>
-                        <li>會陰: 1%</li>
-                        <li class="col-span-2 text-red-600 font-bold mt-1">≥20% 二級燒傷 → 創傷中心</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 class="font-bold mb-2">IV 併發症 (七宗罪)</h3>
-                    <div class="flex flex-wrap gap-2">
-                        <span class="protocol-tag bg-info">1. 體液外滲</span>
-                        <span class="protocol-tag bg-info">2. 血栓/靜脈炎</span>
-                        <span class="protocol-tag bg-info">3. 感染</span>
-                        <span class="protocol-tag bg-info">4. 循環負荷過重</span>
-                        <span class="protocol-tag bg-info">5. 過敏</span>
-                        <span class="protocol-tag bg-info">6. 導管栓塞</span>
-                        <span class="protocol-tag bg-info">7. 空氣栓塞</span>
-                    </div>
-                </div>
+        <!-- 五、創傷方案 -->
+        <section id="trauma" class="bg-white rounded-2xl shadow-sm p-6 border border-slate-100">
+            <div class="section-header">
+                <h2 class="text-2xl font-bold text-slate-800">五、創傷、疼痛與特殊程序 <span class="term-en">Trauma & Pain Relief</span></h2>
             </div>
-
-            <!-- 八、常見錯誤覆核 -->
-            <div class="mt-8">
-                <h2 class="text-xl font-bold text-orange-700 mb-4 border-b-2 border-orange-100 pb-2">八、常見錯誤覆核</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div class="p-3 bg-orange-50 border-l-4 border-orange-500">
-                        <p class="font-bold mb-1">評估 & 藥物</p>
-                        <ul class="list-disc list-inside space-y-1">
-                            <li>無攞料、未著 PPE、離場前無 4-Lead/Hstix</li>
-                            <li>未問過敏、未記時間</li>
-                            <li>Midazolam <span class="font-bold text-red-600">未多抽 0.1ml</span></li>
+            
+            <div class="mb-6">
+                <h3 class="font-bold text-red-800 mb-3">創傷中心分流指標 <span class="term-en">Trauma Center Diversion Indicators</span></h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 bg-red-50 rounded-xl border border-red-100">
+                        <p class="font-bold text-sm underline mb-1">能量機制 (MOI)</p>
+                        <ul class="text-xs space-y-1">
+                            <li>墜落：成人&gt;6m / 小童&gt;3m</li>
+                            <li>車外拋出、同車者死亡、槍傷</li>
                         </ul>
                     </div>
-                    <div class="p-3 bg-orange-50 border-l-4 border-orange-500">
-                        <p class="font-bold mb-1">創傷 & 其他</p>
-                        <ul class="list-disc list-inside space-y-1">
-                            <li>SMR 前後無 CSMC</li>
-                            <li>止血帶落關節、剷床露出四窿</li>
-                            <li>孕婦未左側臥、麻醉劑個案未執藥樽</li>
+                    <div class="p-4 bg-red-50 rounded-xl border border-red-100">
+                        <p class="font-bold text-sm underline mb-1">生理指標 (Physiology)</p>
+                        <ul class="text-xs space-y-1">
+                            <li>GCS ≤ 13</li>
+                            <li>收縮壓 (SBP) &lt; 90</li>
+                            <li>呼吸率 (RR) &lt; 10 或 &gt; 29</li>
                         </ul>
                     </div>
+                    <div class="p-4 bg-red-50 rounded-xl border border-red-100">
+                        <p class="font-bold text-sm underline mb-1">解剖構造 (Anatomy)</p>
+                        <p class="text-[10px] leading-tight">連枷胸、雙長骨骨折、近端斷肢、穿透傷、癱瘓、盆骨骨折、≥20%二級燒傷</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div class="p-4 bg-slate-50 border rounded-xl">
+                    <h4 class="font-bold text-blue-900 border-b pb-1 mb-2">止血環酸 (TXA)</h4>
+                    <p class="text-xs">嚴重出血、SBP&lt;90、傷後3小時內；給藥：100mg/min × 10次</p>
+                </div>
+                <div class="p-4 bg-slate-50 border rounded-xl">
+                    <h4 class="font-bold text-blue-900 border-b pb-1 mb-2">止痛藥物 (Penthrox)</h4>
+                    <p class="text-xs">≥12歲、SBP≥90；給藥：3ml 吸入 (Inhalation)</p>
+                </div>
+                <div class="p-4 bg-slate-50 border rounded-xl">
+                    <h4 class="font-bold text-blue-900 border-b pb-1 mb-2">曲馬多 (Tramadol)</h4>
+                    <p class="text-xs">≥18歲、意識清醒、劇痛；≥50kg：75mg / &lt;50kg：50mg IMI</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 六、OHCA 與 工具 -->
+        <section id="ohca" class="bg-slate-900 text-white rounded-2xl shadow-xl p-6 md:p-8">
+            <div class="flex items-center mb-6">
+                <div class="w-2 h-8 bg-red-500 mr-4"></div>
+                <h2 class="text-2xl font-bold">六、心臟驟停與醫療工具 <span class="text-slate-400 font-normal">OHCA & Equipment</span></h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-red-400 font-bold mb-3">心臟驟停藥物 <span class="term-en text-slate-500">OHCA Medications</span></h3>
+                        <div class="space-y-3">
+                            <div class="p-4 bg-slate-800 rounded-lg border border-slate-700">
+                                <p class="font-bold text-sm">腎上腺素 (Adrenaline) 1:10,000</p>
+                                <p class="text-xs mt-1 text-slate-300">劑量：1mg IV/IO，每 3-5 分鐘一次，最多 5 次。</p>
+                            </div>
+                            <div class="p-4 bg-slate-800 rounded-lg border border-slate-700">
+                                <p class="font-bold text-sm">胺碘酮 (Amiodarone)</p>
+                                <p class="text-xs mt-1 text-slate-300">劑量：首劑 300mg，第二劑 150mg；最多給予 2 次。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4 text-sm">
+                    <h3 class="text-blue-400 font-bold mb-3">關鍵醫療設備 <span class="term-en text-slate-500">Equipment Notes</span></h3>
+                    <ul class="space-y-3">
+                        <li class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <strong>喉罩氣道 (LMA):</strong> ≥12歲、無脈搏；3號 35ml / 4-5號 45ml 空氣充盈。
+                        </li>
+                        <li class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <strong>自動按壓機 (ACCM):</strong> ≥8歲 (身高≥115cm)；<span class="text-red-400">禁忌：懷孕、胸部外傷、環境具爆炸風險。</span>
+                        </li>
+                        <li class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                            <strong>HAT 止血帶:</strong> 傷口 5cm 近端使用；若無法止血可並列使用第二條。
+                        </li>
+                        <li class="bg-slate-800 p-3 rounded-lg border border-red-900">
+                            <strong>HD 止血敷料:</strong> <span class="text-red-400 font-bold">嚴禁使用於：眼睛、腦部、脊椎。</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 八、常見錯誤覆核 -->
+        <section id="review" class="bg-white rounded-2xl shadow-sm p-6 border border-orange-200">
+            <div class="section-header border-orange-500">
+                <h2 class="text-2xl font-bold text-slate-800">常見錯誤與品質覆核 <span class="term-en">Common Errors & Checklist</span></h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="p-5 bg-orange-50 rounded-xl border border-orange-100">
+                    <h3 class="font-bold text-orange-800 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                        評估與藥物管理錯誤
+                    </h3>
+                    <ul class="text-sm space-y-2 list-disc list-inside text-orange-900">
+                        <li>未進行病史搜集 (Gathering data)</li>
+                        <li>未穿妥個人防護裝備 (PPE)</li>
+                        <li>離場前漏做 4-Lead 心電圖或 血糖測試 (Hstix)</li>
+                        <li>給藥前未詢問過敏史，未記錄給藥時間</li>
+                        <li>Midazolam 抽吸時 <span class="font-bold underline">漏抽 0.1ml</span> 剩餘空間</li>
+                    </ul>
+                </div>
+                <div class="p-5 bg-orange-50 rounded-xl border border-orange-100">
+                    <h3 class="font-bold text-orange-800 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                        創傷與現場程序錯誤
+                    </h3>
+                    <ul class="text-sm space-y-2 list-disc list-inside text-orange-900">
+                        <li>執行脊椎固定前後未檢查 CSMC (循環/感覺/運動功能)</li>
+                        <li>止血帶錯誤安置於關節位置</li>
+                        <li>剷式擔架 (Scoop Stretcher) 放置時未對準觀察孔</li>
+                        <li>孕婦患者未採取 <span class="font-bold">左側臥位</span></li>
+                        <li>麻醉劑中毒個案未隨身帶走藥瓶供急症室核對</li>
+                    </ul>
                 </div>
             </div>
         </section>
 
     </main>
 
-    <footer class="bg-gray-800 text-gray-400 py-6 text-center text-xs">
-        <p>© 2025 EMS Protocol Review Assistant</p>
-        <p class="mt-1">請確保所有救護操作符合當前最新官方指引</p>
+    <footer class="bg-slate-900 text-slate-500 py-12 text-center border-t border-slate-800 mt-20">
+        <div class="max-w-4xl mx-auto px-4">
+            <p class="text-sm font-semibold text-slate-300">緊急救護專業溫習系統 (Bilingual Clinical Review)</p>
+            <p class="mt-4 text-xs leading-relaxed">
+                本網頁僅供學術交流及專業溫習使用。在實際臨床操作中，請務必遵循當地救護機構之最新指引。<br>
+                All data derived from official EMS protocols. Ensure compliance with current guidelines.
+            </p>
+        </div>
     </footer>
 
     <script>
-        // Smooth scrolling for navigation links
+        // Smooth scroll and active link effect
         document.querySelectorAll('nav a').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
                 e.preventDefault();
                 const targetId = this.getAttribute('href');
                 const targetElement = document.querySelector(targetId);
-                const offset = 60; // Adjust for sticky nav height
+                const offset = 80;
                 const elementPosition = targetElement.getBoundingClientRect().top;
                 const offsetPosition = elementPosition + window.pageYOffset - offset;
 
