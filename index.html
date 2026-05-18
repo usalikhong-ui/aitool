@@ -3,115 +3,26 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>香港巴士 ETA</title>
+<title>附近巴士 ETA</title>
 
 <style>
 *{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Arial,"Microsoft JhengHei",sans-serif;
-  background:#f3f4f6;
-  color:#111827;
-}
-.app{
-  max-width:680px;
-  margin:0 auto;
-  min-height:100vh;
-  padding:16px;
-}
-.hero{
-  background:linear-gradient(135deg,#d71920,#8f1115);
-  color:white;
-  padding:26px;
-  border-radius:24px;
-  margin-bottom:16px;
-}
-.hero h1{
-  margin:0;
-  font-size:32px;
-  font-weight:900;
-}
-.card{
-  background:white;
-  border-radius:22px;
-  padding:16px;
-  margin-bottom:14px;
-  box-shadow:0 4px 16px rgba(0,0,0,.08);
-}
-label{
-  display:block;
-  font-weight:900;
-  margin:12px 0 6px;
-}
-input,select,button{
-  width:100%;
-  padding:14px;
-  border-radius:14px;
-  border:1px solid #d1d5db;
-  font-size:16px;
-}
-button{
-  background:#d71920;
-  color:white;
-  border:0;
-  font-weight:900;
-  margin-top:12px;
-}
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-.item{
-  border:1px solid #e5e7eb;
-  border-radius:18px;
-  padding:14px;
-  margin-top:10px;
-  background:white;
-}
-.title{
-  font-weight:900;
-  font-size:17px;
-}
-.meta{
-  color:#6b7280;
-  font-size:13px;
-  margin-top:5px;
-  line-height:1.45;
-}
-.eta{
-  background:#f9fafb;
-  border:1px solid #e5e7eb;
-  border-radius:14px;
-  padding:12px;
-  margin-top:8px;
-}
-.eta-main{
-  color:#d71920;
-  font-size:25px;
-  font-weight:900;
-}
-.status{
-  text-align:center;
-  color:#6b7280;
-  padding:18px;
-}
-.badge{
-  display:inline-block;
-  padding:4px 8px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:900;
-  margin-right:6px;
-}
-.kmb{
-  background:#fef2f2;
-  color:#b91c1c;
-}
-.ctb{
-  background:#eff6ff;
-  color:#1d4ed8;
-}
+body{margin:0;font-family:Arial,"Microsoft JhengHei",sans-serif;background:#f3f4f6;color:#111827}
+.app{max-width:680px;margin:0 auto;min-height:100vh;padding:16px}
+.hero{background:linear-gradient(135deg,#d71920,#8f1115);color:white;padding:26px;border-radius:24px;margin-bottom:16px}
+.hero h1{margin:0;font-size:32px;font-weight:900}
+.card{background:white;border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+button{width:100%;padding:15px;border-radius:16px;border:0;background:#d71920;color:white;font-weight:900;font-size:17px;margin-top:10px}
+.status{text-align:center;color:#6b7280;padding:18px}
+.stop{border:1px solid #e5e7eb;border-radius:18px;padding:14px;margin-top:12px;background:white}
+.stop-title{font-size:20px;font-weight:900}
+.meta{color:#6b7280;font-size:13px;margin-top:5px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:900;margin-right:6px}
+.kmb{background:#fef2f2;color:#b91c1c}
+.ctb{background:#eff6ff;color:#1d4ed8}
+.eta{background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin-top:8px}
+.route{font-weight:900;font-size:18px}
+.time{color:#d71920;font-size:24px;font-weight:900;margin-top:4px}
 </style>
 </head>
 
@@ -119,39 +30,15 @@ button{
 <div class="app">
 
   <div class="hero">
-    <h1>香港巴士 ETA</h1>
+    <h1>附近巴士 ETA</h1>
   </div>
 
   <div class="card">
-    <label>輸入路線</label>
-    <input id="routeInput" value="694" placeholder="例如：694 / 1A / 970X" />
-
-    <div class="grid">
-      <div>
-        <label>公司</label>
-        <select id="companyInput">
-          <option value="all">全部</option>
-          <option value="kmb">九巴</option>
-          <option value="ctb">城巴</option>
-        </select>
-      </div>
-
-      <div>
-        <label>方向</label>
-        <select id="directionInput">
-          <option value="outbound">去程</option>
-          <option value="inbound">回程</option>
-        </select>
-      </div>
-    </div>
-
-    <button onclick="searchRoute()">搜尋</button>
+    <button onclick="findNearbyStops()">使用我的位置</button>
+    <div id="status" class="status">按上面按鈕定位附近車站</div>
   </div>
 
-  <div class="card">
-    <div id="status" class="status">準備查詢</div>
-    <div id="results"></div>
-  </div>
+  <div id="results"></div>
 
 </div>
 
@@ -159,8 +46,8 @@ button{
 const KMB = "https://data.etabus.gov.hk/v1/transport/kmb";
 const CTB = "https://rt.data.gov.hk/v2/transport/citybus";
 
-let kmbStops = {};
-let ctbStops = {};
+let kmbStops = [];
+let ctbStops = [];
 
 function status(text){
   document.getElementById("status").textContent = text;
@@ -172,183 +59,135 @@ function clearResults(){
 
 async function getJson(url){
   const response = await fetch(url);
-  if(!response.ok){
-    throw new Error("HTTP " + response.status + " : " + url);
-  }
+  if(!response.ok) throw new Error("HTTP " + response.status);
   return await response.json();
 }
 
-function formatMinutes(etaString){
-  if(!etaString) return "沒有資料";
-  const eta = new Date(etaString);
-  const now = new Date();
-  const minutes = Math.round((eta - now) / 60000);
-  if(minutes <= 0) return "即將到站";
-  return minutes + " 分鐘";
+function distanceMeters(lat1, lon1, lat2, lon2){
+  const R = 6371000;
+  const p1 = lat1 * Math.PI / 180;
+  const p2 = lat2 * Math.PI / 180;
+  const dp = (lat2-lat1) * Math.PI / 180;
+  const dl = (lon2-lon1) * Math.PI / 180;
+  const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-function formatTime(etaString){
-  if(!etaString) return "-";
-  return new Date(etaString).toLocaleTimeString("zh-HK", {
-    hour:"2-digit",
-    minute:"2-digit"
+function formatMin(eta){
+  if(!eta) return "沒有資料";
+  const min = Math.round((new Date(eta) - new Date()) / 60000);
+  if(min <= 0) return "即將到站";
+  return min + " 分鐘";
+}
+
+function formatTime(eta){
+  if(!eta) return "-";
+  return new Date(eta).toLocaleTimeString("zh-HK",{hour:"2-digit",minute:"2-digit"});
+}
+
+async function loadStops(){
+  if(kmbStops.length === 0){
+    const k = await getJson(KMB + "/stop");
+    kmbStops = (k.data || []).map(s => ({
+      company:"kmb",
+      companyName:"九巴",
+      stop:s.stop,
+      name:s.name_tc || s.name_en || "九巴車站",
+      lat:Number(s.lat),
+      lng:Number(s.long)
+    }));
+  }
+
+  if(ctbStops.length === 0){
+    const c = await getJson(CTB + "/stop/ctb");
+    ctbStops = (c.data || []).map(s => ({
+      company:"ctb",
+      companyName:"城巴",
+      stop:s.stop,
+      name:s.name_tc || s.name_en || "城巴車站",
+      lat:Number(s.lat),
+      lng:Number(s.long)
+    }));
+  }
+}
+
+function findNearbyStops(){
+  clearResults();
+  status("正在定位...");
+
+  if(!navigator.geolocation){
+    status("你的瀏覽器不支援定位");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const userLat = pos.coords.latitude;
+    const userLng = pos.coords.longitude;
+
+    status("正在搜尋附近車站...");
+    await loadStops();
+
+    const allStops = [...kmbStops, ...ctbStops]
+      .filter(s => !isNaN(s.lat) && !isNaN(s.lng))
+      .map(s => ({
+        ...s,
+        distance: distanceMeters(userLat, userLng, s.lat, s.lng)
+      }))
+      .sort((a,b) => a.distance - b.distance)
+      .slice(0, 8);
+
+    if(allStops.length === 0){
+      status("附近找不到車站");
+      return;
+    }
+
+    status("找到附近 " + allStops.length + " 個車站");
+
+    for(const stop of allStops){
+      renderStop(stop);
+      loadEta(stop);
+    }
+
+  }, err => {
+    status("定位失敗。請確認 Safari / 瀏覽器已允許位置權限。");
+  }, {
+    enableHighAccuracy:true,
+    timeout:10000,
+    maximumAge:30000
   });
 }
 
-async function loadStopData(){
-  if(Object.keys(kmbStops).length === 0){
-    try{
-      const data = await getJson(KMB + "/stop");
-      (data.data || []).forEach(stop => {
-        kmbStops[stop.stop] = stop;
-      });
-    }catch(e){
-      console.warn("KMB stop load failed", e);
-    }
-  }
-
-  if(Object.keys(ctbStops).length === 0){
-    try{
-      const data = await getJson(CTB + "/stop/ctb");
-      (data.data || []).forEach(stop => {
-        ctbStops[stop.stop] = stop;
-      });
-    }catch(e){
-      console.warn("CTB stop load failed", e);
-    }
-  }
-}
-
-function getStopName(company, stopId){
-  if(company === "kmb"){
-    return kmbStops[stopId]?.name_tc || kmbStops[stopId]?.name_en || "未命名車站";
-  }
-
-  if(company === "ctb"){
-    return ctbStops[stopId]?.name_tc || ctbStops[stopId]?.name_en || "未命名車站";
-  }
-
-  return "未命名車站";
-}
-
-async function searchRoute(){
-  clearResults();
-
-  const route = document.getElementById("routeInput").value.trim().toUpperCase();
-  const company = document.getElementById("companyInput").value;
-  const direction = document.getElementById("directionInput").value;
-
-  if(!route){
-    status("請輸入路線");
-    return;
-  }
-
-  status("正在搜尋...");
-  await loadStopData();
-
-  let results = [];
-
-  if(company === "all" || company === "kmb"){
-    const kmbResult = await searchKmbRoute(route, direction);
-    results = results.concat(kmbResult);
-  }
-
-  if(company === "all" || company === "ctb"){
-    const ctbResult = await searchCtbRoute(route, direction);
-    results = results.concat(ctbResult);
-  }
-
-  if(results.length === 0){
-    status("找不到路線。請試另一個方向，或改選九巴 / 城巴。");
-    return;
-  }
-
-  status("找到 " + results.length + " 個車站");
-  results.forEach(renderStop);
-}
-
-async function searchKmbRoute(route, direction){
-  try{
-    const url = KMB + "/route-stop/" + route + "/" + direction + "/1";
-    const data = await getJson(url);
-
-    return (data.data || []).map(item => {
-      return {
-        company:"kmb",
-        companyName:"九巴",
-        route:route,
-        direction:direction,
-        seq:item.seq,
-        stop:item.stop,
-        name:getStopName("kmb", item.stop)
-      };
-    });
-  }catch(e){
-    console.warn("KMB route failed", e);
-    return [];
-  }
-}
-
-async function searchCtbRoute(route, direction){
-  try{
-    const url = CTB + "/route-stop/ctb/" + route + "/" + direction;
-    const data = await getJson(url);
-
-    return (data.data || []).map(item => {
-      return {
-        company:"ctb",
-        companyName:"城巴",
-        route:route,
-        direction:direction,
-        seq:item.seq,
-        stop:item.stop,
-        name:getStopName("ctb", item.stop)
-      };
-    });
-  }catch(e){
-    console.warn("CTB route failed", e);
-    return [];
-  }
-}
-
-function renderStop(item){
-  const badgeClass = item.company === "kmb" ? "kmb" : "ctb";
-  const directionText = item.direction === "outbound" ? "去程" : "回程";
+function renderStop(stop){
+  const badgeClass = stop.company === "kmb" ? "kmb" : "ctb";
 
   const div = document.createElement("div");
-  div.className = "item";
+  div.className = "card stop";
+  div.id = "stop-" + stop.company + "-" + stop.stop;
 
   div.innerHTML = `
-    <div class="title">
-      <span class="badge ${badgeClass}">${item.companyName}</span>
-      第 ${item.seq} 站｜${item.name}
+    <div class="stop-title">
+      <span class="badge ${badgeClass}">${stop.companyName}</span>
+      ${stop.name}
     </div>
-
-    <div class="meta">
-      路線：${item.route}｜方向：${directionText}
+    <div class="meta">距離約 ${Math.round(stop.distance)} 米</div>
+    <div class="etaList">
+      <div class="eta">正在讀取到站時間...</div>
     </div>
-
-    <button onclick="loadEta('${item.company}', '${item.stop}', '${item.route}', this)">
-      查此站 ETA
-    </button>
-
-    <div class="etaBox"></div>
   `;
 
   document.getElementById("results").appendChild(div);
 }
 
-async function loadEta(company, stop, route, button){
-  const box = button.parentElement.querySelector(".etaBox");
-  box.innerHTML = `<div class="eta">正在讀取 ETA...</div>`;
+async function loadEta(stop){
+  const box = document.querySelector("#stop-" + stop.company + "-" + stop.stop + " .etaList");
 
   try{
     let data;
 
-    if(company === "kmb"){
-      data = await getJson(KMB + "/eta/" + stop + "/" + route + "/1");
+    if(stop.company === "kmb"){
+      data = await getJson(KMB + "/stop-eta/" + stop.stop);
     }else{
-      data = await getJson(CTB + "/eta/ctb/" + stop + "/" + route);
+      data = await getJson(CTB + "/eta/ctb/" + stop.stop);
     }
 
     const list = data.data || [];
@@ -358,22 +197,19 @@ async function loadEta(company, stop, route, button){
       return;
     }
 
-    box.innerHTML = list.slice(0,3).map(item => `
+    box.innerHTML = list.slice(0, 6).map(e => `
       <div class="eta">
-        <div class="eta-main">${formatMinutes(item.eta)}</div>
-        <div class="meta">預計：${formatTime(item.eta)}</div>
-        <div class="meta">目的地：${item.dest_tc || item.dest_en || "-"}</div>
-        <div class="meta">${item.rmk_tc || item.rmk_en || ""}</div>
+        <div class="route">${e.route || "-"} 往 ${e.dest_tc || e.dest_en || "-"}</div>
+        <div class="time">${formatMin(e.eta)}</div>
+        <div class="meta">預計 ${formatTime(e.eta)} ${e.rmk_tc || e.rmk_en || ""}</div>
       </div>
     `).join("");
 
   }catch(e){
     console.error(e);
-    box.innerHTML = `<div class="eta">ETA 讀取失敗</div>`;
+    box.innerHTML = `<div class="eta">到站時間讀取失敗</div>`;
   }
 }
-
-searchRoute();
 </script>
 
 </body>
