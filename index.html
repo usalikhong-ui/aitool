@@ -1,475 +1,347 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-HK">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>專業救護程序溫習系統</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --clinic-blue: #0052cc;
-            --clinic-cyan: #00d2ff;
-            --clinic-red: #d32f2f;
-            --clinic-green: #2e7d32;
-            --clinic-bg: #f4f7fa;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>九巴即時到站時間</title>
 
-        body {
-            font-family: 'Inter', 'Noto Sans TC', sans-serif;
-            background-color: var(--clinic-bg);
-            color: #2d3748;
-            scroll-behavior: smooth;
-        }
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-        /* 橢圓膠囊按鈕特效 */
-        .capsule-btn {
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 9999px; /* 強制完美橢圓 */
-            padding: 10px 18px;
-            font-size: 11px;
-            font-weight: 900;
-            text-align: center;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: #4a5568;
-        }
+    body {
+      margin: 0;
+      font-family: Arial, "Microsoft JhengHei", sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+    }
 
-        .capsule-btn:hover {
-            border-color: var(--clinic-blue);
-            color: var(--clinic-blue);
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 10px 20px -5px rgba(0, 82, 204, 0.2);
-            background: #f0f7ff;
-        }
+    .app {
+      max-width: 560px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 16px;
+    }
 
-        /* 橢圓邊框主卡片 */
-        .section-capsule {
-            background: white;
-            border-radius: 3.5rem; /* 大橢圓邊角 */
-            border: 2px solid #ffffff;
-            margin-bottom: 40px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.05);
-        }
+    .header {
+      background: linear-gradient(135deg, #d71920, #9b1116);
+      color: white;
+      padding: 22px;
+      border-radius: 22px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    }
 
-        .section-header {
-            background: linear-gradient(135deg, #071e3d 0%, #1e3a8a 100%);
-            padding: 24px 35px;
-            color: white;
-            font-weight: 900;
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            border-bottom: 4px solid var(--clinic-cyan);
-        }
+    .header h1 {
+      margin: 0;
+      font-size: 26px;
+    }
 
-        /* 內容區塊排版 */
-        .info-card-green { @apply bg-emerald-50 border-l-[12px] border-emerald-500 p-6 rounded-[2.5rem] mb-4 font-bold text-[11px] text-emerald-900 shadow-sm; }
-        .info-card-red { @apply bg-red-50 border-l-[12px] border-red-500 p-6 rounded-[2.5rem] mb-4 font-bold text-[11px] text-red-900 shadow-sm; }
-        .info-card-blue { @apply bg-blue-50 border-l-[12px] border-blue-500 p-6 rounded-[2.5rem] mb-4 font-bold text-[11px] text-blue-900 shadow-sm; }
+    .header p {
+      margin: 8px 0 0;
+      font-size: 14px;
+      opacity: 0.9;
+    }
 
-        /* 導航佈局：防止重疊 */
-        .nav-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-        @media (min-width: 768px) {
-            .nav-grid { grid-template-columns: repeat(4, 1fr); }
-        }
+    .card {
+      background: white;
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
 
-        /* 列表樣式 */
-        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 2rem; overflow: hidden; }
-        .data-table th { background: #1a202c; color: white; padding: 14px; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        .data-table td { background: white; padding: 14px; border-bottom: 1px solid #edf2f7; font-size: 11px; text-align: center; font-weight: 700; }
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 10px 0 6px;
+      font-size: 14px;
+    }
 
-        .fail-box { @apply flex items-start space-x-3 p-4 bg-orange-50 border border-orange-100 rounded-2xl mb-2 text-[10px] font-bold text-orange-800; }
-        
-        section { scroll-margin-top: 150px; }
-        .drug-jump { @apply cursor-pointer text-blue-600 underline font-black; }
-    </style>
+    input, select, button {
+      width: 100%;
+      padding: 13px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: 1px solid #d1d5db;
+    }
+
+    input {
+      text-transform: uppercase;
+    }
+
+    button {
+      border: 0;
+      background: #d71920;
+      color: white;
+      font-weight: bold;
+      margin-top: 12px;
+    }
+
+    button.secondary {
+      background: #374151;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .status {
+      text-align: center;
+      color: #6b7280;
+      padding: 16px;
+    }
+
+    .stop {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 14px;
+      margin-top: 10px;
+      background: #fff;
+    }
+
+    .stop-title {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .muted {
+      color: #6b7280;
+      font-size: 13px;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .eta {
+      background: #f9fafb;
+      border-radius: 14px;
+      padding: 12px;
+      margin-top: 8px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .eta-main {
+      color: #d71920;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .small-note {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+  </style>
 </head>
+
 <body>
+  <div class="app">
 
-    <!-- Professional HUD Header -->
-    <header class="bg-white py-16 px-6 text-center border-b shadow-sm relative overflow-hidden">
-        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 via-blue-800 to-blue-400"></div>
-        <div class="max-w-5xl mx-auto">
-            <div class="inline-block px-6 py-1.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-black tracking-[0.3em] mb-4 border border-blue-100 uppercase">
-                Clinical Protocol System // Initialized
-            </div>
-            <h1 class="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 mb-2">緊急救護程序專業溫習手冊</h1>
-            <p class="text-slate-400 font-bold tracking-[0.5em] text-[10px] uppercase opacity-70">Official Paramedic Decision Support</p>
+    <div class="header">
+      <h1>九巴即時到站時間</h1>
+      <p>KMB ETA Public API Demo｜無需 API Key</p>
+    </div>
+
+    <div class="card">
+      <label>輸入九巴路線</label>
+      <input id="routeInput" value="1A" placeholder="例如：1A / 98D / 215X" />
+
+      <div class="grid">
+        <div>
+          <label>方向</label>
+          <select id="directionInput">
+            <option value="outbound">去程 outbound</option>
+            <option value="inbound">回程 inbound</option>
+          </select>
         </div>
-    </header>
 
-    <!-- Capsule Navigation Interface -->
-    <nav class="sticky top-0 z-[1000] bg-white/90 backdrop-blur-xl border-b p-5 shadow-xl">
-        <div class="max-w-7xl mx-auto nav-grid">
-            <a href="#primary" class="capsule-btn">基本評估 PRIMARY</a>
-            <a href="#vitals" class="capsule-btn">臨床指標 VITALS</a>
-            <a href="#airway" class="capsule-btn">氣道管理 AIRWAY</a>
-            <a href="#medical" class="capsule-btn text-blue-700">內科方案 MEDICAL</a>
-            <a href="#trauma" class="capsule-btn text-red-700">創傷止血 TRAUMA</a>
-            <a href="#ohca" class="capsule-btn">心臟驟停 OHCA</a>
-            <a href="#tools" class="capsule-btn">器材教學 TOOLS</a>
-            <a href="#review" class="capsule-btn border-red-200 text-red-600">品質覆核 REVIEW</a>
+        <div>
+          <label>服務類型</label>
+          <select id="serviceInput">
+            <option value="1">正常班次</option>
+            <option value="2">特別班次 2</option>
+            <option value="3">特別班次 3</option>
+          </select>
         </div>
-    </nav>
+      </div>
 
-    <main class="max-w-7xl mx-auto p-4 md:p-12">
+      <button onclick="loadStops()">搜尋車站</button>
 
-        <!-- 1. 基本評估 -->
-        <section id="primary" class="section-capsule">
-            <div class="section-header">
-                <span class="mr-4 text-2xl">🧬</span> 1. 基本評估架構 Primary Framework
-            </div>
-            <div class="p-10 space-y-12">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
-                    <div class="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-inner">
-                        <h3 class="text-blue-800 font-black text-xs mb-6 border-b pb-2 uppercase italic tracking-widest">RSE & Data Gathering</h3>
-                        <ul class="text-[11px] space-y-4 font-bold text-slate-600">
-                            <li><span class="text-blue-500 mr-2">●</span> <strong>現場安全：</strong>確認武器、針筒、化學品、紅帽橙樓警示。</li>
-                            <li><span class="text-blue-500 mr-2">●</span> <strong>病史收集：</strong>抽搐持續時間/次數、Allergy 過敏史、長期聞氣、藥物劑量。</li>
-                            <li><span class="text-blue-500 mr-2">●</span> <strong>意識 (LOC)：</strong>A/V 直接叫。P/U 接觸前必須穿妥 PPE。</li>
-                        </ul>
-                    </div>
-                    <div class="bg-slate-950 text-white p-8 rounded-[3rem] shadow-2xl relative border-b-8 border-blue-500">
-                        <h3 class="text-blue-400 font-black text-xs mb-6 border-b border-slate-800 pb-2 uppercase">頸椎限制與手動穩定</h3>
-                        <p class="text-[10px] text-slate-400 mb-5 italic">執行 Iron Man 手勢後執行五形拳鎖定：</p>
-                        <div class="grid grid-cols-1 gap-2.5">
-                            <div class="flex items-center space-x-4 p-3 bg-slate-900 rounded-2xl border border-slate-800 hover:bg-blue-900 transition-colors">
-                                <span class="w-10 font-black text-blue-500 text-xs text-center border-r border-slate-700">跪</span>
-                                <span class="text-[10px] font-bold">穩定重心。</span>
-                            </div>
-                            <div class="flex items-center space-x-4 p-3 bg-slate-900 rounded-2xl border border-slate-800 hover:bg-blue-900 transition-colors">
-                                <span class="w-10 font-black text-blue-500 text-xs text-center border-r border-slate-700">撐</span>
-                                <span class="text-[10px] font-bold">雙肘形成支點。</span>
-                            </div>
-                            <div class="flex items-center space-x-4 p-3 bg-slate-900 rounded-2xl border border-slate-800 hover:bg-blue-900 transition-colors">
-                                <span class="w-10 font-black text-blue-500 text-xs text-center border-r border-slate-700">抓</span>
-                                <span class="text-[10px] font-bold">抓緊頭側。</span>
-                            </div>
-                            <div class="flex items-center space-x-4 p-3 bg-slate-900 rounded-2xl border border-slate-800 hover:bg-blue-900 transition-colors">
-                                <span class="w-10 font-black text-blue-500 text-xs text-center border-r border-slate-700">夾</span>
-                                <span class="text-[10px] font-bold">夾緊肩部。</span>
-                            </div>
-                            <div class="flex items-center space-x-4 p-3 bg-slate-900 rounded-2xl border border-slate-800 hover:bg-blue-900 transition-colors">
-                                <span class="w-10 font-black text-blue-500 text-xs text-center border-r border-slate-700">鎖</span>
-                                <span class="text-[10px] font-bold">完全鎖死。</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      <p class="small-note">
+        用法：輸入路線 → 選方向 → 搜尋車站 → 按「查此站 ETA」。
+      </p>
+    </div>
 
-                <!-- ABCDE Dashboard -->
-                <div class="bg-blue-700 rounded-[4rem] p-12 grid grid-cols-1 md:grid-cols-3 gap-12 text-white shadow-2xl relative">
-                    <div class="space-y-3">
-                        <p class="font-black text-blue-200 border-b border-white/20 pb-3 text-xs uppercase tracking-widest italic">C - Circulation</p>
-                        <p class="text-[11px] leading-relaxed">A/V 摸橈動脈。<br>P/U 摸頸動脈 <span class="text-yellow-300 underline font-black">足 10 秒</span>。<br>評估：強/規律/過快。</p>
-                    </div>
-                    <div class="space-y-3">
-                        <p class="font-black text-blue-200 border-b border-white/20 pb-3 text-xs uppercase tracking-widest italic">B - Breathing</p>
-                        <p class="text-[11px] leading-relaxed">觀察胸部起伏 10s。<br>深度與質量：深/淺、費力/順暢。</p>
-                    </div>
-                    <div class="space-y-3">
-                        <p class="font-black text-blue-200 border-b border-white/20 pb-3 text-xs uppercase tracking-widest italic">A - Airway</p>
-                        <p class="text-[11px] leading-relaxed">能對答即暢通。<br>阻塞：指頭法、抽吸、指挖或落 OPA/NPA。</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+    <div class="card">
+      <div id="status" class="status">準備查詢</div>
+      <div id="stops"></div>
+    </div>
 
-        <!-- 2. 生命指標與 GCS -->
-        <section id="vitals" class="section-capsule">
-            <div class="section-header bg-slate-800 border-blue-400">
-                <span class="mr-4 text-2xl">📊</span> 2. 臨床注意指標與意識評分
-            </div>
-            <div class="p-10">
-                <div class="overflow-hidden rounded-[2.5rem] border-2 border-slate-100 shadow-md mb-12">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th class="w-1/4">參數類別</th>
-                                <th>新生兒</th>
-                                <th>嬰兒 (0-1y)</th>
-                                <th>小童 (1-8y)</th>
-                                <th>成人 (≥8y)</th>
-                            </tr>
-                        </thead>
-                        <tbody class="font-bold text-slate-700">
-                            <tr><td class="bg-slate-950 text-blue-400">BVM 頻率</td><td>40 次/分</td><td>30 次/分</td><td>1-3y:25; 3-8y:20</td><td>10 次/分</td></tr>
-                            <tr><td class="bg-slate-950 text-blue-400">CPR 介入</td><td>HR &lt;60</td><td colspan="2" class="text-red-500 bg-red-50">HR &lt;60 + 發紺 + 昏迷</td><td>無脈搏 Pulseless</td></tr>
-                            <tr><td class="bg-slate-950 text-blue-400">按壓深度</td><td colspan="3">$1/3 - 1/2$ 胸部深度</td><td>5 - 6 厘米</td></tr>
-                            <tr><td class="bg-slate-950 text-blue-400">按壓比例</td><td>3 : 1</td><td colspan="2">單人 30:2 / 雙人 15:2</td><td>30 : 2</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+  </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    <!-- Expanded GCS Table -->
-                    <div class="bg-white border-2 border-slate-100 rounded-[3rem] overflow-hidden shadow-xl">
-                        <div class="bg-blue-900 text-white p-5 font-black text-xs text-center uppercase tracking-widest border-b border-blue-500">GCS 詳盡評分對照表 E4 V5 M6</div>
-                        <table class="w-full text-[10px] font-bold">
-                            <thead class="bg-slate-50 text-slate-400">
-                                <tr class="text-center"><th>分值</th><th>睜眼反應 (EYE)</th><th>語言反應 (VERBAL)</th><th>運動反應 (MOTOR)</th></tr>
-                            </thead>
-                            <tbody class="text-slate-800">
-                                <tr class="border-b text-center"><td class="p-3 bg-slate-50 text-blue-600 font-black">6</td><td>--</td><td>--</td><td class="text-left pl-6">能遵從指令活動</td></tr>
-                                <tr class="border-b text-center"><td class="p-3 bg-slate-50 text-blue-600 font-black">5</td><td>--</td><td class="text-left pl-6">正常對答且定向力清晰</td><td class="text-left pl-6">能定位痛刺激部位</td></tr>
-                                <tr class="border-b text-center"><td class="p-3 bg-slate-50 text-blue-600 font-black">4</td><td class="text-left pl-6">自發性睜眼</td><td class="text-left pl-6">答錯但有正確方向</td><td class="text-left pl-6">痛時能避縮反應</td></tr>
-                                <tr class="border-b text-center"><td class="p-3 bg-slate-50 text-blue-600 font-black">3</td><td class="text-left pl-6">呼喚時睜眼</td><td class="text-left pl-6">單字或問非所答</td><td class="text-left pl-6">異常屈曲 (曲)</td></tr>
-                                <tr class="border-b text-center"><td class="p-3 bg-slate-50 text-blue-600 font-black">2</td><td class="text-left pl-6">痛楚時睜眼</td><td class="text-left pl-6">只能發出無義聲音</td><td class="text-left pl-6">異常伸直 (直)</td></tr>
-                                <tr class="text-center"><td class="p-3 bg-slate-50 text-blue-600 font-black">1</td><td class="text-left pl-6">完全沒反應</td><td class="text-left pl-6">完全沒有語言回答</td><td class="text-left pl-6">完全沒有活動</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- Rule of Nines -->
-                    <div class="p-10 bg-slate-900 text-white rounded-[3.5rem] shadow-2xl flex flex-col justify-center border-b-8 border-orange-600">
-                        <h3 class="text-blue-400 font-black text-xs mb-8 text-center uppercase tracking-[0.3em] underline">燒傷九分法 Rule of Nines</h3>
-                        <div class="grid grid-cols-2 gap-x-12 gap-y-5 text-[11px] font-black">
-                            <div class="flex justify-between border-b border-white/10 pb-2"><span>頭頸部 Head/Neck</span><span class="text-blue-400">9%</span></div>
-                            <div class="flex justify-between border-b border-white/10 pb-2"><span>雙上肢 Arms</span><span class="text-blue-400">9% x 2</span></div>
-                            <div class="flex justify-between border-b border-white/10 pb-2"><span>前軀幹 Ant. Trunk</span><span class="text-blue-400">18%</span></div>
-                            <div class="flex justify-between border-b border-white/10 pb-2"><span>後軀幹 Post. Trunk</span><span class="text-blue-400">18%</span></div>
-                            <div class="flex justify-between border-b border-white/10 pb-2"><span>雙下肢 Legs</span><span class="text-blue-400">18% x 2</span></div>
-                            <div class="flex justify-between text-red-500 pt-2 font-black uppercase"><span>會陰 Perineum</span><span>1%</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+<script>
+  const API_BASE = "https://data.etabus.gov.hk/v1/transport/kmb";
 
-        <!-- 4. 內科方案 -->
-        <section id="medical" class="section-capsule">
-            <div class="section-header bg-slate-900 border-blue-600">
-                <span class="mr-4 text-2xl">💊</span> 4. 內科方案模組 Medical Protocols
-            </div>
-            <div class="p-10 space-y-20">
-                
-                <!-- Respiratory -->
-                <div id="med-resp" class="scroll-mt-32">
-                    <h3 class="font-black text-blue-900 text-2xl mb-8 flex items-center"><span class="w-2.5 h-10 bg-blue-600 mr-5 rounded-full shadow-lg"></span> 呼吸系統 Respiratory Call</h3>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <div class="space-y-4">
-                            <div class="info-card-green">● 適用：氣促伴哮喘/COPD病史；濃煙/氣體曝露導致支氣管收窄。</div>
-                            <div class="info-card-red">● 禁忌：過敏；Salbutamol(&lt;2y)；Atrovent(&lt;12y/青光眼)。</div>
-                        </div>
-                        <div class="p-10 bg-blue-50 border-2 border-blue-100 rounded-[3rem] shadow-inner relative">
-                            <p class="font-black text-blue-800 text-[11px] mb-4 uppercase underline decoration-double">治理程序 Administration</p>
-                            <ul class="text-[11px] space-y-3 font-bold text-slate-700 leading-relaxed">
-                                <li>1. 執行四大臨床重點：聽肺音、主觀感受、RR、SPO2。</li>
-                                <li>2. <strong>Salbutamol:</strong> 2-5y: 2 Puffs | 5-12y: 3 Puffs | ≥12y: 4 Puffs (隔 5 分鐘)。</li>
-                                <li>3. <strong>Atrovent:</strong> ≥12y: 2 Puffs (只限投藥 1 次)。</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+  function setStatus(text) {
+    document.getElementById("status").textContent = text;
+  }
 
-                <!-- Neuro/Metabolic -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    <!-- Glycemia -->
-                    <div class="p-10 bg-white border border-slate-200 rounded-[3.5rem] shadow-2xl border-t-8 border-orange-500">
-                        <h3 class="font-black text-orange-600 text-xs mb-8 uppercase tracking-widest border-b pb-2">血糖管理 GLYCEMIA HUD</h3>
-                        <div class="space-y-6 text-[11px] font-bold">
-                            <div class="p-6 bg-orange-50/50 rounded-3xl border border-orange-100">
-                                <p class="text-orange-700 underline mb-3 italic">低血糖 (≤ 4.0 mmol/L)：</p>
-                                1. D10W PO 200ml 或 IV 100ml FR。<br>
-                                2. Thiamine: 50mg IV 3-way。<br>
-                                3. 升糖素 (Glucagon): IV 困難時 IMI 1mg (≥12y)。
-                            </div>
-                            <div class="p-6 bg-blue-50/50 rounded-3xl border border-blue-100 text-blue-800">
-                                <p class="underline mb-2 italic">高血糖 (> 20.0 mmol/L)：</p>
-                                生理鹽水 (NS) 500ml @ 200ml/hr。
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Midazolam -->
-                    <div class="p-10 bg-slate-900 text-white rounded-[3.5rem] shadow-2xl border-b-8 border-purple-500">
-                        <h3 class="font-black text-purple-400 text-xs mb-8 uppercase tracking-widest border-b border-slate-800 pb-2">抽搐管理 CONVULSION</h3>
-                        <div class="info-card-green border-purple-500 bg-purple-500/10 text-purple-200 mb-6 font-bold">目擊病人持續全身性抽搐、不醒人事。</div>
-                        <ul class="text-[11px] space-y-5 font-bold text-slate-400">
-                            <li>● 劑量：≥50kg 10mg；&lt;50kg 7.5mg 鼻內 (IN)。</li>
-                            <li class="bg-red-700 text-white p-5 rounded-3xl shadow-lg border-2 border-red-500">
-                                <span class="block text-xs font-black mb-1 underline italic uppercase">關鍵細節 (CRITICAL)：</span>
-                                投藥至噴霧器 (MAD) 前，必須額外抽取 <span class="text-yellow-300 text-xs px-1 underline">0.1ml 藥液</span> 以填充死腔量，絕非抽空氣。
-                            </li>
-                            <li>● 5 分鐘後若未止，重複劑量為首劑之一半。</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
+  function getRoute() {
+    return document.getElementById("routeInput").value.trim().toUpperCase();
+  }
 
-        <!-- 5. 創傷、止血與疼痛 (包含 TXA) -->
-        <section id="trauma" class="section-capsule">
-            <div class="section-header bg-red-900 border-red-400">
-                <span class="mr-4 text-2xl">🩸</span> 5. 創傷止血與疼痛方案 Trauma & Pain relief
-            </div>
-            <div class="p-10 space-y-16">
-                <!-- TXA Protocol -->
-                <div id="trauma-txa">
-                    <h3 class="font-black text-red-700 text-2xl mb-8 flex items-center uppercase"><span class="w-2.5 h-10 bg-red-600 mr-5 rounded-full shadow-lg"></span> 止血環酸方案 Tranexamic Acid (TXA)</h3>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <div class="space-y-4">
-                            <div class="info-card-green">
-                                ● 適用條件：<br>
-                                1. 嚴重創傷伴隨大量出血跡象。<br>
-                                2. 收縮壓 (SBP) &lt; 90 mmHg。<br>
-                                3. 創傷發生於 3 小時內且年齡 ≥ 18 歲。
-                            </div>
-                            <div class="info-card-red">● 禁忌：超過 3 小時；已知過敏。</div>
-                        </div>
-                        <div class="p-10 bg-red-50 border-2 border-red-100 rounded-[3rem] shadow-inner">
-                            <p class="font-black text-red-800 text-[11px] mb-4 uppercase underline decoration-double italic">治理程序 Administration</p>
-                            <div class="space-y-4 text-[11px] font-bold text-slate-700">
-                                <p>● 劑量：1000 毫克 (10ml) 靜脈注射 (IV)。</p>
-                                <div class="bg-red-700 text-white p-6 rounded-3xl shadow-xl border-b-4 border-red-950">
-                                    <span class="block text-xs mb-1 underline">注射速率：</span>
-                                    每分鐘注射 1 毫升 (100mg)，需持續穩定注射滿 10 分鐘。
-                                </div>
-                                <p class="text-red-700 font-black italic">※ 若途中發生 Traumatic Arrest，應即時推注剩餘所有劑量。</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+  function getDirection() {
+    return document.getElementById("directionInput").value;
+  }
 
-                <!-- Pain Relief -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    <div class="p-10 bg-white border border-slate-200 rounded-[3.5rem] shadow-xl">
-                        <h3 class="font-black text-slate-800 text-sm mb-6 uppercase tracking-widest border-b pb-2">吸入止痛 PENTHROX</h3>
-                        <ul class="text-[11px] font-bold space-y-3 text-slate-500">
-                            <li class="text-emerald-700 italic">● 適用：所有痛症 (SBP ≥ 90, Age ≥ 12)。</li>
-                            <li class="text-red-700 italic">● 禁忌：24小時內用過、肝腎病史、惡性高熱史。</li>
-                        </ul>
-                    </div>
-                    <div class="p-10 bg-slate-900 text-white rounded-[3.5rem] shadow-2xl border-b-8 border-red-500">
-                        <h3 class="font-black text-blue-400 text-sm mb-6 uppercase tracking-widest border-b border-slate-800 pb-2">止痛方案 TRAMADOL</h3>
-                        <ul class="text-[11px] font-bold space-y-4 text-slate-400">
-                            <li class="text-emerald-400">● 適用：清醒且劇痛 (SBP ≥ 90, Age ≥ 18)。</li>
-                            <li>● 劑量：≥50kg 75mg | &lt;50kg 50mg IMI。</li>
-                            <li class="text-red-400 underline">● 禁忌：兩週內服止咳藥、精神病史、酒精中毒。</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </section>
+  function getServiceType() {
+    return document.getElementById("serviceInput").value;
+  }
 
-        <!-- 7. 醫療器材操作教學 -->
-        <section id="tools" class="section-capsule">
-            <div class="section-header bg-slate-800 border-orange-500">
-                <span class="mr-4 text-2xl">🔧</span> 7. 器材操作指南 Tools Manual
-            </div>
-            <div class="p-12 space-y-16">
-                <!-- Scoop -->
-                <div class="bg-orange-50/50 border-2 border-orange-100 rounded-[4rem] p-12 shadow-inner">
-                    <h3 class="font-black text-orange-900 text-2xl mb-8 flex items-center">剷式擔架 Scoop Stretcher 規範</h3>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 text-[11px] font-bold">
-                        <div class="p-10 bg-white border-4 border-red-600 rounded-[3.5rem] shadow-2xl relative transform -rotate-1">
-                            <p class="text-red-600 font-black text-sm mb-4 underline uppercase tracking-tighter italic">致命四孔禁忌 (4-HOLE RULE)</p>
-                            <p class="text-slate-500 leading-relaxed font-black uppercase tracking-tight">調整長度時，救護員嚴禁讓結構支柱露出「4 個孔位」。若露出 4 個孔，結構強度不足，負重抬起時擔架會發生嚴重摺疊斷裂，對傷者造成致命二次傷害。</p>
-                        </div>
-                        <div class="space-y-4 flex flex-col justify-center">
-                            <div class="flex items-center p-5 bg-white rounded-full border border-orange-200 shadow-sm"><div class="step-bubble !bg-orange-600">1</div><span>量度：第二粒窩釘對病人耳珠。</span></div>
-                            <div class="flex items-center p-5 bg-white rounded-full border border-orange-200 shadow-sm"><div class="step-bubble !bg-orange-600">2</div><span>鎖死：聽到「咔」聲並執行 Lifting Test。</span></div>
-                            <div class="flex items-center p-5 bg-white rounded-full border border-orange-200 shadow-sm"><div class="step-bubble !bg-orange-600">3</div><span>安全：必須扣妥胸、腰、大腿 3 條安全帶。</span></div>
-                        </div>
-                    </div>
-                </div>
+  function formatMinutes(etaString) {
+    if (!etaString) return "沒有資料";
 
-                <!-- LMA -->
-                <div class="bg-blue-50/50 border-2 border-blue-100 rounded-[4rem] p-12">
-                    <h3 class="font-black text-blue-900 text-2xl mb-8">LMA Supreme 進階氣道操作</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-[11px] font-black">
-                        <div class="p-8 bg-white rounded-[2.5rem] border border-blue-200 shadow-md text-center">
-                            <p class="text-blue-600 underline mb-4 uppercase italic">測試階段</p>
-                            50ml 針筒測試氣囊。背面塗抹潤滑劑。
-                        </div>
-                        <div class="p-8 bg-white rounded-[2.5rem] border border-blue-200 shadow-md text-center">
-                            <p class="text-blue-600 underline mb-4 uppercase italic">插入階段</p>
-                            指頭法打開口腔。沿硬顎推入至有阻力。鮑魚尖對準環狀軟骨位。
-                        </div>
-                        <div class="p-8 bg-red-100 rounded-[2.5rem] border border-red-300 shadow-md text-center text-red-600">
-                            <p class="underline mb-4 uppercase italic">充氣指標</p>
-                            Size 3: 35ml 空氣<br>Size 4-5: 45ml 空氣
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+    const etaTime = new Date(etaString);
+    const now = new Date();
+    const diffMin = Math.round((etaTime - now) / 60000);
 
-        <!-- 8. 品質覆核清單 -->
-        <section id="review" class="section-capsule border-4 border-red-600 shadow-[0_0_120px_rgba(239,68,68,0.2)]">
-            <div class="card-header bg-slate-950 text-red-500">
-                <div class="flex items-center space-x-3">
-                    <span class="p-3 bg-red-500/20 rounded-2xl text-xl shadow-inner">⚠️</span>
-                    <h2 class="font-black text-xl italic tracking-tighter">臨床品質覆核 Clinical Failure Checklist</h2>
-                </div>
-            </div>
-            <div class="p-12 grid grid-cols-1 md:grid-cols-3 gap-12">
-                <div class="space-y-4">
-                    <h4 class="text-slate-900 border-b-4 border-slate-100 pb-3 mb-8 uppercase font-black text-xs">RSE & 評估失誤</h4>
-                    <p class="fail-box">❌ 攞料不足：漏問抽搐持續時間或長期吸氧原因。</p>
-                    <p class="fail-box">❌ 脈搏檢查：檢查 Carotid 不足 10 秒即判斷 OHCA。</p>
-                    <p class="fail-box">❌ 頸椎：懷疑受傷漏報「Iron Man 手勢」指令。</p>
-                </div>
-                <div class="space-y-4">
-                    <h4 class="text-slate-900 border-b-4 border-slate-100 pb-3 mb-8 uppercase font-black text-xs">藥物投予失誤</h4>
-                    <p class="fail-box !text-red-600">❌ Midazolam：噴藥前漏抽 0.1ml 藥液填充死腔。</p>
-                    <p class="fail-box">❌ 記錄：投藥漏報「鐵三角」(時間/劑量/反應)。</p>
-                    <p class="fail-box">❌ TXA：投藥速度過快 (必須滿足 10 分鐘注射)。</p>
-                </div>
-                <div class="space-y-4">
-                    <h4 class="text-slate-900 border-b-4 border-slate-100 pb-3 mb-8 uppercase font-black text-xs">器材操作失誤</h4>
-                    <p class="fail-box">❌ 剷床：露出 4 個孔位導致搬運時擔架摺曲。</p>
-                    <p class="fail-box">❌ T-pod：放置前漏檢查並清空病人褲袋。</p>
-                    <p class="fail-box">❌ 止血帶：落於關節部位或距離傷口過近。</p>
-                </div>
-            </div>
-        </section>
+    if (diffMin <= 0) return "即將到站";
+    return diffMin + " 分鐘";
+  }
 
-    </main>
+  function formatClockTime(etaString) {
+    if (!etaString) return "-";
 
-    <footer class="bg-white py-24 text-center border-t border-slate-200 text-[10px] px-12">
-        <div class="max-w-4xl mx-auto space-y-10">
-            <p class="font-black text-slate-300 tracking-[1.2em] uppercase mb-10">Emergency Medical Protocol Reference</p>
-            <p class="leading-relaxed opacity-60 text-slate-500 font-bold max-w-3xl mx-auto italic">
-                此溫習系統嚴格對標專業臨床標準。內容涵蓋氣道管理、內科用藥、創傷止血及心臟驟停之所有關鍵細節。<br>
-                在臨床實踐中，請務必遵循當地救護機構之最新官方指引與安全協議。
-            </p>
-            <div class="flex justify-center space-x-4">
-                <div class="h-1 w-16 bg-blue-600 rounded-full shadow-lg"></div>
-                <div class="h-1 w-6 bg-blue-300 rounded-full"></div>
-                <div class="h-1 w-2 bg-blue-100 rounded-full"></div>
-            </div>
+    return new Date(etaString).toLocaleTimeString("zh-HK", {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  async function fetchJson(url) {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("HTTP Error: " + response.status);
+    }
+
+    return await response.json();
+  }
+
+  async function getStopName(stopId) {
+    try {
+      const url = API_BASE + "/stop/" + stopId;
+      const json = await fetchJson(url);
+
+      if (!json.data) return stopId;
+
+      return json.data.name_tc || json.data.name_en || stopId;
+    } catch (error) {
+      return stopId;
+    }
+  }
+
+  async function loadStops() {
+    const route = getRoute();
+    const direction = getDirection();
+    const serviceType = getServiceType();
+
+    const stopsDiv = document.getElementById("stops");
+    stopsDiv.innerHTML = "";
+
+    if (!route) {
+      setStatus("請先輸入九巴路線");
+      return;
+    }
+
+    setStatus("正在讀取車站資料...");
+
+    try {
+      const url = API_BASE + "/route-stop/" + route + "/" + direction + "/" + serviceType;
+      const json = await fetchJson(url);
+      const routeStops = json.data || [];
+
+      if (routeStops.length === 0) {
+        setStatus("找不到車站。請檢查路線，或轉另一個方向。");
+        return;
+      }
+
+      setStatus("找到 " + routeStops.length + " 個車站");
+
+      for (const item of routeStops) {
+        const stopId = item.stop;
+        const stopName = await getStopName(stopId);
+
+        const stopElement = document.createElement("div");
+        stopElement.className = "stop";
+
+        stopElement.innerHTML = `
+          <div class="stop-title">${item.seq}. ${stopName}</div>
+          <div class="muted">Stop ID: ${stopId}</div>
+          <button onclick="loadEta('${stopId}', '${route}', '${serviceType}', this)">
+            查此站 ETA
+          </button>
+          <div class="etaResult"></div>
+        `;
+
+        stopsDiv.appendChild(stopElement);
+      }
+
+    } catch (error) {
+      console.error(error);
+      setStatus("讀取失敗。可能是網絡問題、瀏覽器限制，或 API 暫時未能連線。");
+    }
+  }
+
+  async function loadEta(stopId, route, serviceType, button) {
+    const resultBox = button.parentElement.querySelector(".etaResult");
+
+    resultBox.innerHTML = `
+      <div class="eta">
+        <div class="muted">正在讀取 ETA...</div>
+      </div>
+    `;
+
+    try {
+      const url = API_BASE + "/eta/" + stopId + "/" + route + "/" + serviceType;
+      const json = await fetchJson(url);
+      const etaList = json.data || [];
+
+      if (etaList.length === 0) {
+        resultBox.innerHTML = `
+          <div class="eta">
+            <div class="muted">暫時沒有到站時間</div>
+          </div>
+        `;
+        return;
+      }
+
+      resultBox.innerHTML = etaList.slice(0, 3).map(item => {
+        return `
+          <div class="eta">
+            <div class="eta-main">${formatMinutes(item.eta)}</div>
+            <div class="muted">預計時間：${formatClockTime(item.eta)}</div>
+            <div class="muted">目的地：${item.dest_tc || item.dest_en || "-"}</div>
+            <div class="muted">${item.rmk_tc || item.rmk_en || ""}</div>
+          </div>
+        `;
+      }).join("");
+
+    } catch (error) {
+      console.error(error);
+      resultBox.innerHTML = `
+        <div class="eta">
+          <div class="muted">ETA 讀取失敗</div>
         </div>
-    </footer>
+      `;
+    }
+  }
 
-    <script>
-        // 修正平滑滾動與橢圓按鈕活動狀態
-        document.querySelectorAll('nav a').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                const targetId = this.getAttribute('href');
-                const targetElement = document.querySelector(targetId);
-                if (targetElement) {
-                    e.preventDefault();
-                    const offset = 180;
-                    const elementPosition = targetElement.getBoundingClientRect().top;
-                    const offsetPosition = elementPosition + window.pageYOffset - offset;
-                    window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-                    
-                    document.querySelectorAll('.nav-capsule').forEach(btn => btn.classList.remove('active'));
-                    this.classList.add('active');
-                }
-            });
-        });
-    </script>
+  loadStops();
+</script>
+
 </body>
 </html>
-
