@@ -1,216 +1,579 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>附近巴士 ETA</title>
-
-<style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,"Microsoft JhengHei",sans-serif;background:#f3f4f6;color:#111827}
-.app{max-width:680px;margin:0 auto;min-height:100vh;padding:16px}
-.hero{background:linear-gradient(135deg,#d71920,#8f1115);color:white;padding:26px;border-radius:24px;margin-bottom:16px}
-.hero h1{margin:0;font-size:32px;font-weight:900}
-.card{background:white;border-radius:22px;padding:16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.08)}
-button{width:100%;padding:15px;border-radius:16px;border:0;background:#d71920;color:white;font-weight:900;font-size:17px;margin-top:10px}
-.status{text-align:center;color:#6b7280;padding:18px}
-.stop{border:1px solid #e5e7eb;border-radius:18px;padding:14px;margin-top:12px;background:white}
-.stop-title{font-size:20px;font-weight:900}
-.meta{color:#6b7280;font-size:13px;margin-top:5px}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;font-weight:900;margin-right:6px}
-.kmb{background:#fef2f2;color:#b91c1c}
-.ctb{background:#eff6ff;color:#1d4ed8}
-.eta{background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:12px;margin-top:8px}
-.route{font-weight:900;font-size:18px}
-.time{color:#d71920;font-size:24px;font-weight:900;margin-top:4px}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>救護隊目綜合 MC 動態模擬試卷</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@400;500;700;900&display=swap');
+    body {
+      font-family: 'Noto Sans HK', system-ui, -apple-system, sans-serif;
+      background-color: #f4f7fb;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
 </head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
-<body>
-<div class="app">
-
-  <div class="hero">
-    <h1>附近巴士 ETA</h1>
-  </div>
-
-  <div class="card">
-    <button onclick="findNearbyStops()">使用我的位置</button>
-    <div id="status" class="status">按上面按鈕定位附近車站</div>
-  </div>
-
-  <div id="results"></div>
-
-</div>
-
-<script>
-const KMB = "https://data.etabus.gov.hk/v1/transport/kmb";
-const CTB = "https://rt.data.gov.hk/v2/transport/citybus";
-
-let kmbStops = [];
-let ctbStops = [];
-
-function status(text){
-  document.getElementById("status").textContent = text;
-}
-
-function clearResults(){
-  document.getElementById("results").innerHTML = "";
-}
-
-async function getJson(url){
-  const response = await fetch(url);
-  if(!response.ok) throw new Error("HTTP " + response.status);
-  return await response.json();
-}
-
-function distanceMeters(lat1, lon1, lat2, lon2){
-  const R = 6371000;
-  const p1 = lat1 * Math.PI / 180;
-  const p2 = lat2 * Math.PI / 180;
-  const dp = (lat2-lat1) * Math.PI / 180;
-  const dl = (lon2-lon1) * Math.PI / 180;
-  const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function formatMin(eta){
-  if(!eta) return "沒有資料";
-  const min = Math.round((new Date(eta) - new Date()) / 60000);
-  if(min <= 0) return "即將到站";
-  return min + " 分鐘";
-}
-
-function formatTime(eta){
-  if(!eta) return "-";
-  return new Date(eta).toLocaleTimeString("zh-HK",{hour:"2-digit",minute:"2-digit"});
-}
-
-async function loadStops(){
-  if(kmbStops.length === 0){
-    const k = await getJson(KMB + "/stop");
-    kmbStops = (k.data || []).map(s => ({
-      company:"kmb",
-      companyName:"九巴",
-      stop:s.stop,
-      name:s.name_tc || s.name_en || "九巴車站",
-      lat:Number(s.lat),
-      lng:Number(s.long)
-    }));
-  }
-
-  if(ctbStops.length === 0){
-    const c = await getJson(CTB + "/stop/ctb");
-    ctbStops = (c.data || []).map(s => ({
-      company:"ctb",
-      companyName:"城巴",
-      stop:s.stop,
-      name:s.name_tc || s.name_en || "城巴車站",
-      lat:Number(s.lat),
-      lng:Number(s.long)
-    }));
-  }
-}
-
-function findNearbyStops(){
-  clearResults();
-  status("正在定位...");
-
-  if(!navigator.geolocation){
-    status("你的瀏覽器不支援定位");
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(async pos => {
-    const userLat = pos.coords.latitude;
-    const userLng = pos.coords.longitude;
-
-    status("正在搜尋附近車站...");
-    await loadStops();
-
-    const allStops = [...kmbStops, ...ctbStops]
-      .filter(s => !isNaN(s.lat) && !isNaN(s.lng))
-      .map(s => ({
-        ...s,
-        distance: distanceMeters(userLat, userLng, s.lat, s.lng)
-      }))
-      .sort((a,b) => a.distance - b.distance)
-      .slice(0, 8);
-
-    if(allStops.length === 0){
-      status("附近找不到車站");
-      return;
-    }
-
-    status("找到附近 " + allStops.length + " 個車站");
-
-    for(const stop of allStops){
-      renderStop(stop);
-      loadEta(stop);
-    }
-
-  }, err => {
-    status("定位失敗。請確認 Safari / 瀏覽器已允許位置權限。");
-  }, {
-    enableHighAccuracy:true,
-    timeout:10000,
-    maximumAge:30000
-  });
-}
-
-function renderStop(stop){
-  const badgeClass = stop.company === "kmb" ? "kmb" : "ctb";
-
-  const div = document.createElement("div");
-  div.className = "card stop";
-  div.id = "stop-" + stop.company + "-" + stop.stop;
-
-  div.innerHTML = `
-    <div class="stop-title">
-      <span class="badge ${badgeClass}">${stop.companyName}</span>
-      ${stop.name}
-    </div>
-    <div class="meta">距離約 ${Math.round(stop.distance)} 米</div>
-    <div class="etaList">
-      <div class="eta">正在讀取到站時間...</div>
-    </div>
-  `;
-
-  document.getElementById("results").appendChild(div);
-}
-
-async function loadEta(stop){
-  const box = document.querySelector("#stop-" + stop.company + "-" + stop.stop + " .etaList");
-
-  try{
-    let data;
-
-    if(stop.company === "kmb"){
-      data = await getJson(KMB + "/stop-eta/" + stop.stop);
-    }else{
-      data = await getJson(CTB + "/eta/ctb/" + stop.stop);
-    }
-
-    const list = data.data || [];
-
-    if(list.length === 0){
-      box.innerHTML = `<div class="eta">暫時沒有到站時間</div>`;
-      return;
-    }
-
-    box.innerHTML = list.slice(0, 6).map(e => `
-      <div class="eta">
-        <div class="route">${e.route || "-"} 往 ${e.dest_tc || e.dest_en || "-"}</div>
-        <div class="time">${formatMin(e.eta)}</div>
-        <div class="meta">預計 ${formatTime(e.eta)} ${e.rmk_tc || e.rmk_en || ""}</div>
+  <!-- Sticky Top Header -->
+  <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur border-b border-slate-800 text-white shadow-md">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black text-lg text-white shadow">
+          🚑
+        </div>
+        <div>
+          <h1 class="font-bold text-base sm:text-lg leading-tight">救護隊目綜合 MC 動態題庫系統</h1>
+          <p class="text-xs text-slate-400" id="headerSubtext">無限次動態抽題｜精準分卷</p>
+        </div>
       </div>
-    `).join("");
 
-  }catch(e){
-    console.error(e);
-    box.innerHTML = `<div class="eta">到站時間讀取失敗</div>`;
+      <!-- Progress -->
+      <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+        <div class="text-xs font-semibold text-slate-300">
+          已答 <span id="answeredCount" class="text-blue-400 font-bold">0</span> / <span id="totalCount">20</span> 題
+        </div>
+        <div class="w-28 sm:w-36 h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+          <div id="progressBar" class="h-full bg-blue-500 transition-all duration-300 w-0"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-4xl mx-auto px-4 py-6 flex-1 w-full">
+
+    <!-- Hero Banner -->
+    <div class="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-2xl p-5 sm:p-7 shadow-xl mb-6 border border-slate-800">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span class="inline-block px-2.5 py-1 text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30 rounded-full mb-2">
+            消防處救護隊目升級考 ‧ 隨機無限刷題版
+          </span>
+          <h2 class="text-xl sm:text-2xl font-black mb-1" id="paperTitle">甲卷：裝備與救護學</h2>
+          <p class="text-xs sm:text-sm text-slate-300 leading-relaxed" id="paperDesc">
+            裝備日試、操作程序、人體與病理學基礎
+          </p>
+        </div>
+        
+        <!-- Controls -->
+        <div class="flex flex-col gap-2 self-start md:self-auto min-w-[180px]">
+          <button id="drawNewPaperBtn" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs px-3 py-2.5 rounded-xl shadow-md border border-blue-400/30 transition">
+            <span>🎲 隨機抽取新試卷</span>
+          </button>
+          <div class="flex items-center gap-2 bg-slate-800/80 backdrop-blur px-3 py-2 rounded-xl border border-slate-700">
+            <input type="checkbox" id="instantFeedbackToggle" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+            <label for="instantFeedbackToggle" class="text-xs font-semibold text-slate-200 cursor-pointer select-none">
+              即時對答案模式
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paper Navigation Tabs -->
+    <nav class="flex gap-2 overflow-x-auto pb-2 mb-6 custom-scrollbar" id="tabNav"></nav>
+
+    <!-- Result Box -->
+    <div id="resultBox" class="hidden bg-white rounded-2xl border border-slate-200 shadow-md p-6 mb-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div>
+          <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider">本卷成績統計</div>
+          <div class="text-3xl sm:text-4xl font-black text-blue-600 mt-1" id="scoreText">0 / 20</div>
+        </div>
+        <div id="resultFeedback" class="text-sm font-bold text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          --
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-3 mt-4 text-center">
+        <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-xl">
+          <div class="text-xs text-emerald-600 font-semibold">答對</div>
+          <div class="text-lg font-bold text-emerald-700" id="correctStat">0</div>
+        </div>
+        <div class="bg-rose-50 border border-rose-100 p-3 rounded-xl">
+          <div class="text-xs text-rose-600 font-semibold">答錯</div>
+          <div class="text-lg font-bold text-rose-700" id="wrongStat">0</div>
+        </div>
+        <div class="bg-amber-50 border border-amber-100 p-3 rounded-xl">
+          <div class="text-xs text-amber-600 font-semibold">未答</div>
+          <div class="text-lg font-bold text-amber-700" id="blankStat">0</div>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2 justify-end">
+        <button id="filterWrongBtn" class="text-xs font-bold px-3 py-2 bg-rose-100 text-rose-700 rounded-lg hover:bg-rose-200 transition">
+          切換：只顯示錯題
+        </button>
+        <button id="showAllBtn" class="text-xs font-bold px-3 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition hidden">
+          顯示全部題目
+        </button>
+      </div>
+    </div>
+
+    <!-- Question Container -->
+    <div id="questionsContainer" class="space-y-4"></div>
+
+    <!-- Bottom Actions -->
+    <div class="sticky bottom-4 mt-8 z-20">
+      <div class="bg-white/90 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl p-3 flex items-center justify-between gap-3 max-w-xl mx-auto">
+        <button id="resetBtn" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">
+          重做當前題組
+        </button>
+        <button id="submitBtn" class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md shadow-blue-500/20 transition">
+          提交並改卷
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal for Reset Confirmation -->
+  <div id="confirmModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-100">
+      <h3 class="text-lg font-bold text-slate-900 mb-2">確定重置當前答案？</h3>
+      <p class="text-sm text-slate-600 mb-6">這將會清空目前卷面上選擇的所有答案與批改記錄，但保留相同題組。</p>
+      <div class="flex justify-end gap-3">
+        <button id="cancelReset" class="px-4 py-2 rounded-xl text-slate-600 font-semibold text-sm bg-slate-100 hover:bg-slate-200">取消</button>
+        <button id="confirmReset" class="px-4 py-2 rounded-xl text-white font-semibold text-sm bg-rose-600 hover:bg-rose-700">確定重置</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // Comprehensive Master Question Pool Extracted Strictly from Uploaded Documents
+  const questionPool = {
+    // -------------------------------------------------------------
+    // 甲卷：裝備與救護學 (Equipment & Ambulance Studies)
+    // -------------------------------------------------------------
+    paperA: {
+      name: '甲卷：裝備與救護學',
+      desc: '裝備日試、操作程序、人體與病理學基礎',
+      questions: [
+        ['救護學的三大原則不包括下列哪一項？', ['保存性命', '防止病況或傷勢惡化', '促進復原', '確定刑事責任'], 3, '三大原則是保存性命、防止惡化及促進復原。'],
+        ['救護人員診斷傷病者時，主要根據病歷、病徵及哪一項？', ['症狀', '年齡', '職業', '住址'], 0, '診斷的三項根據是病歷、病徵和症狀。'],
+        ['下列哪一項屬於「症狀」而非「病徵」？', ['膚色蒼白', '脈搏急促', '傷病者自述眩暈', '可見畸形'], 2, '症狀是傷病者感覺到並能講述的情況；病徵則由救護人員觀察或觸摸所得。'],
+        ['救護車管輸氧氣存量低於哪個水平時須更換氣樽？', ['1,722 kPa（250 psi／17.2 bar）', '3,447 kPa（500 psi／34.5 bar）', '5,168 kPa（750 psi／50 bar）', '6,895 kPa（1,000 psi／69 bar）'], 0, '管輸氧氣測試資料訂明低於 1,722 kPa（250 psi／17.2 bar）須更換。'],
+        ['測試救護車管輸氧氣是否漏氣時，關閉總掣後，容量表讀數應在多久內保持不變？', ['30 秒', '1 分鐘', '90 秒', '2 分鐘'], 1, '關總掣後須觀察容量表一分鐘，讀數應保持不變。'],
+        ['管輸氧氣流量器的測試輸出範圍是每分鐘多少公升？', ['0 至 10', '0 至 12', '0 至 15', '5 至 20'], 2, '須確認流量器能操作於每分鐘 0 至 15 公升。'],
+        ['測試氧氣調節器系統（ORS）時，D 型氧氣樽低於多少便需更換？', ['250 psi／17.2 bar', '500 psi／35 bar', '750 psi／50 bar', '1,500 psi／100 bar'], 2, 'ORS 日試標準為低於 750 psi（50 bar／5,168 kPa）便需更換。'],
+        ['ORS 關閉氣樽活門後觀察 90 秒，容量表讀數不應下降多於多少？', ['50 psi', '100 psi', '150 psi', '250 psi'], 1, '90 秒內讀數下降不可多於 100 psi（7 bar／689 kPa）。'],
+        ['使用 Stifneck 硬頸套前，首先應確保甚麼？', ['傷者坐起', '頭部置於自然姿勢', '先拉緊魔術貼', '先除去所有衣服'], 1, '先確保頭部在自然姿勢，並移去頸和耳附近衣物及飾物。'],
+        ['Stifneck 硬頸套正確承托時，傷者頦部至少須蓋住甚麼？', ['頸套上緣', '魔術貼末端', '頦托中央扣子', '胸骨切跡'], 2, '頦部至少要蓋住頦托中央扣子。'],
+        ['簡易解救套（KED）使用後的正確清潔次序是哪一項？', ['消毒劑→清水→清潔劑→抹乾', '清潔劑及溫水→清水沖洗→消毒劑抹拭→風乾', '清水→風乾→消毒劑→熱水', '只需消毒後收藏'], 1, '資料列明先用溫和清潔劑及溫水，再清水沖洗、消毒劑抹拭及風乾。'],
+        ['下列哪種情況不可把曲柄鉗伸入傷病者口中？', ['清楚看見異物', '傷病者正在抽搐', '傷病者已失去反應且異物可見', '有伙伴用電筒照明'], 1, '仍咳嗽、不合作掙扎、嘔吐或抽搐時均不可伸入曲柄鉗。'],
+        ['使用曲柄鉗的必要條件是甚麼？', ['必須先盲目掃口腔', '必須直接看見異物', '只可由醫生操作', '傷病者必須坐立'], 1, '只有直接看見異物才可使用，切勿在口腔亂抓或亂掃。'],
+        ['即凍冰袋產生冷凍效果的正確步驟是甚麼？', ['冷藏後剪開外袋', '把內容搖到底部、擠破內袋、輕輕搖勻', '加入冰水後大力搖動', '先刺穿內外袋'], 1, '應先把袋中物體搖到底部，再擠破內袋並輕輕搖勻。'],
+        ['用觸診法量度血壓可取得哪個讀數？', ['只可取得收縮壓', '只可取得舒張壓', '可同時取得兩者', '只可取得平均動脈壓'], 0, '觸診法只可量度收縮壓；舒張壓須以聽診法量度。'],
+        ['如需在同一手臂重複量度血壓，應等待多久？', ['30 秒', '1 分鐘', '整整 2 分鐘', '5 分鐘'], 2, '資料訂明應等待整整兩分鐘後才重複量度。'],
+        ['處理上肢骨折時，鋁構造展性夾板最少要有多少層厚度？', ['一層', '兩層', '三層', '四層'], 1, '上肢骨折應使用最少兩層厚度的鋁構造展性夾板。'],
+        ['用夾板固定上肢骨折後，下一項重要檢查是甚麼？', ['只量體溫', '再檢查遠端脈搏及神經功能', '拆除臂懸帶', '讓傷者活動手臂'], 1, '固定前後均要檢查遠端脈搏及神經（運動及感覺）功能。'],
+        ['屍僵一般最先由哪組部位開始？', ['足趾及足踝', '眼皮、下顎、頸及面部', '腰部及骨盆', '手指及手腕'], 1, '資料指出屍僵通常由眼皮、下顎、頸部及面部開始。'],
+        ['人體脾臟屬於下列哪個系統的重要器官？', ['淋巴系統', '呼吸系統', '泌尿系統', '內分泌系統'], 0, '脾臟是淋巴系統的重要器官，參與免疫及血液相關功能。'],
+        ['進行輪椅日試及檢查時，應將測試結果記錄在下列哪份表格上？', ['FS 319', 'FS 361(a)', 'FS 217', 'FS 106'], 1, '輪椅日試結果須記錄在日試及檢查表格 FS 361(a) 上。'],
+        ['推動及使用輪椅時，下列哪項屬於「切勿做」的事項？', ['翹起輪椅前通知患者', '讓患者獨自坐在輪椅上無人理會', '確保隨時緊握輪椅', '使用正確的提舉力學方法'], 1, '切勿讓患者獨自坐在輪椅上無人理會，亦不可在崎嶇地面推動。'],
+        ['庫司毛耳氏呼吸（Kussmaul breathing）常見於高血糖糖尿病酮症酸中毒，其呼吸特徵為？', ['淺而慢', '深而快', '間歇性停止呼吸', '喘鳴音'], 1, '高血糖致酮酸中毒時會出現深而快（庫司毛耳氏）的呼吸狀態。'],
+        ['嚴重低血糖發作時，病人的皮膚狀況通常表現為：', ['溫暖、乾爽、發紅', '冰涼、蒼白、濕潤', '潮紅、發熱', '發紺、乾燥'], 1, '低血糖患者皮膚通常呈現冰涼、蒼白及濕潤（大汗淋漓）。'],
+        ['抬動傷病者時，應主要使用身體哪一組最有力的肌肉？', ['背部肌與臂屈肌', '大腿肌、臀肌及肩肌', '腹肌與胸肌', '小腿肌與手腕肌'], 1, '抬動傷病者的原則之一是使用身體最有力的肌肉：大腿肌、臀肌及肩肌。'],
+        ['用觸診法量度血壓時，充氣至失去肱動脈跳動後，應繼續充氣至該點以上多少毫米汞柱？', ['10 mmHg', '20 mmHg', '30 mmHg', '50 mmHg'], 2, '資料訂明充氣至失去脈搏跳動後，繼續充氣至該點以上 30 毫米汞柱（mmHg）。'],
+        ['使用鋁構造展性夾板固定上肢骨折時，包紮彈性繃帶的正確方向及範圍是：', ['由指尖向腋下包紮', '由上臂開始直達指尖（露出骨折位、肘曲位、手腕及指尖）', '只包裹骨折痛點', '隨意包紮即可'], 1, '應由上臂開始直達指尖，但骨折部位、肘曲位、手腕及指尖需外露以便觀察。']
+      ]
+    },
+
+    // -------------------------------------------------------------
+    // 乙卷：行動與常行訓令 (Operational & Standing Instructions)
+    // -------------------------------------------------------------
+    paperB: {
+      name: '乙卷：行動與常行訓令',
+      desc: '救護車管理、現場行動、調派及感染控制程序',
+      questions: [
+        ['正常情況下，醫療輔助隊人員可否掌管消防處救護車？', ['可以，毋須批准', '不可以；特別安排除外', '只要有一名正規隊員便可以', '只可在夜更'], 1, '正常情況不得掌管；大型節慶等特別安排借車執勤則屬例外。'],
+        ['醫療輔助隊人員為接受訓練隨消防救護車時，其身分應是甚麼？', ['取代正規隨員', '車更編制以外人員', '救護車主管', '司機'], 1, '只可作車更編制以外人員隨車，不得取替正規隊員。'],
+        ['救護車在事故現場停泊於隊員視線範圍以外且無人看守時，誰應留後鎖車？', ['救護車主管', '隨員', '司機', '警員'], 2, '主管與隨員先往現場，由司機留後鎖緊車門再跟上。'],
+        ['救護車停泊在站／局外而無人看守時，鎖匙應如何處理？', ['留在車內', '由任何隊員帶走', '放在當值室特設鎖匙板', '放在車輪旁'], 2, '車輛須上鎖，鎖匙存放於當值室特設鎖匙板並附車號牌。'],
+        ['車輛後備匙應存放在哪裏？', ['主管辦公室特設鎖匙箱', '救護車手套箱', '消防通訊中心', '醫院急症室'], 0, '站／局主管須確保後備匙鎖在主管辦公室的特設鎖匙箱。'],
+        ['現場救護指揮官應把運送傷者進度通知哪個單位？', ['醫院保安部', '消防通訊中心', '警方報案室', '民政事務處'], 1, '須不時通知消防通訊中心，使傷者運送站有足夠救護車。'],
+        ['所有傷者完成運送及／或治療後，現場救護指揮官須確保甚麼？', ['立即撤走所有人員', '把一切醫療用具搬離現場', '關閉附近道路', '留下裝備供警方使用'], 1, '須確保把一切醫療用具搬離現場。'],
+        ['救護車隊員若未能在多少時間內完成病人移交及補充裝備，須申請延長急症室逗留？', ['10 分鐘', '15 分鐘', '20 分鐘', '30 分鐘'], 1, '必須在 15 分鐘期限內向駐院聯絡主任提出。'],
+        ['申請延長急症室逗留時，下列哪項不是駐院聯絡主任應索取的資料？', ['召喚性質', '延長理由', '估計額外逗留時間', '隊員下一更的下班時間'], 3, '所需資料為召喚性質、延長理由及估計額外時間。'],
+        ['前往離島處理事故的直升機救護裝備不包括下列哪一項？', ['救護裝備背囊', '真空夾板', '拼合抬牀', '輪椅'], 3, '清單包括背囊、ORS/BVM、毛氈、真空夾板、救護袋牀、拼合抬牀、頸套、安桃樂及去纖震器，沒有輪椅。'],
+        ['處理私家醫院甲類緊急轉院召喚時，誰須安排醫護人員陪同？', ['消防通訊中心', '負責傷病者的私家醫院醫生', '接收醫院保安員', '救護車主管'], 1, '負責傷病者的醫生必須安排醫護人員陪伴轉院。'],
+        ['私家醫院甲類轉院送往指定醫管局醫院時，FS 319 如何處理？', ['必須填寫', '由警方填寫', '並不適用，毋須使用', '只在夜間使用'], 2, '資料明確指出此情況 FS 319 不適用。'],
+        ['一般獲准在救護車上陪同傷病者的人（不計醫生、護士、警員或隊員）通常不得超過多少？', ['一人', '兩人', '三人', '沒有上限'], 0, '通常不得超過一人，主管仍須按傷病者情況酌情決定。'],
+        ['產婦攜抱嬰孩計算救護車載客人數時，母子合計作多少人？', ['一人', '一個半人', '兩人', '三人'], 1, '資料規定母子兩人作一個半人計。'],
+        ['陪同傷病者的人應坐在哪裏？', ['駕駛室', '放抬牀的車廂內', '任何空位', '車尾踏板'], 1, '陪伴者必須坐在放抬牀的車廂內，不得坐駕駛室。'],
+        ['警方希望查問緊急事故傷病者時，正確做法是甚麼？', ['必須延遲送院直至查問完畢', '不應純為查問而延誤運送；有需要可途中查問', '救護車必須返回警署', '一律拒絕警方登車'], 1, '不能純為警方查問而阻延緊急傷病者送院。'],
+        ['站／局因沒有膳食供應而准許隊員購買食物時，哪項做法正確？', ['可載着病人購買', '主管和司機留車並與通訊中心聯絡', '可在附近立即進食', '可繞路到較遠食店'], 1, '車不可載有病人或正奉召；主管與司機留車，購買後返站／局才進食。'],
+        ['遇到懷疑濫用救護服務，救護車主管首先應怎樣做？', ['拒絕治理', '填妥指定附錄表格呈交站／局主管', '直接向傳媒公布', '向傷病者收費'], 1, '須填妥附錄 I 表格呈交站／局主管，但不可延誤必要的院前治療及護理。'],
+        ['「應急消防措施」實施時，救護總區車輛須加裝甚麼？', ['雪鏈', '防暴網', '額外警號', '遮光簾'], 1, '相關保安措施包括轄下所有車輛裝上防暴網。'],
+        ['在「消防處全體人員緊急戒備」期間，救護總區指揮室的首要相關功用是甚麼？', ['處理薪酬', '協調所有救護行動', '簽發駕駛執照', '調查交通意外責任'], 1, '指揮室負責協調救護行動、聯絡資源與人手、更新部署等。'],
+        ['救護車主管在運送傷病者途中感到不適必須離開車廂時，下列哪項做法正確？', ['立即停車並叫傷者下車', '概括告訴隨員傷情、通知FCSC交隨員照顧並下記於出勤紀錄', '不作任何通知直接離開', '叫司機接替主管職務並離開現場'], 1, '須告知隨員傷情與治療、通知FCSC已交隨員照顧、並在出勤紀錄上記下移交。'],
+        ['下列哪種情況下，急救醫療電單車將會出動處理事故？', ['因為地點關係，救護車召喚到達時間很可能超過12分鐘', '非緊急個案', '第一優先轉院個案', '院內病房轉床'], 0, '當因為地點關係救護車召喚到達時間很可能超過12分鐘、交通意外或嚴重塞車時出動。'],
+        ['感染控制指引中，下列哪項屬於高風險程序，需採取空氣感染防護措施？', ['硝酸甘油噴霧', '使用文氏面罩', '心肺復甦法（CPR）及氣道抽吸', '量度血壓'], 2, '心肺復甦法、正壓灌氣、抽吸氣道、插入氣道儀器等均屬高風險程序。'],
+        ['感染控制指引中，使用硝酸甘油噴霧或每分鐘超過6公升的高氧氣流屬於甚麼風險程序？', ['低風險程序', '中風險程序（飛沫感染防護）', '極高風險程序', '無風險程序'], 1, '硝酸甘油噴霧、文氏面罩、每分鐘超過6公升高氧氣流屬於中風險程序。']
+      ]
+    },
+
+    // -------------------------------------------------------------
+    // 丙卷：法例、國情與國安 (Law, National Situation & National Security)
+    // -------------------------------------------------------------
+    paperC: {
+      name: '丙卷：法例、國情與國安',
+      desc: '消防法例、憲法、基本法、國家安全及國家象徵',
+      questions: [
+        ['根據《消防條例》第 8(1) 條，獲授權人員進入處所時，如有人要求，須出示甚麼？', ['身分證副本', '授權書', '搜查令', '駕駛執照'], 1, '處長或獲書面授權者在被要求時須出示授權書。'],
+        ['對並非公眾娛樂、集結、工廠、工場、工作地點或商業用途的處所，一般須提前多久向佔用人發出擬進入的書面通知？', ['12 小時', '24 小時', '48 小時', '7 日'], 1, '《消防條例》第 8(1) 條資料列明須提前 24 小時書面通知。'],
+        ['消防處福利基金的「受益人」不包括下列哪一項？', ['消防處僱員', '前消防處僱員', '已故消防處僱員的受養人', '任何曾接受消防服務的市民'], 3, '受益人包括現職、前僱員及已故現職／前僱員的受養人。'],
+        ['向消防處福利基金申請非緊急貸款時，申請人須填寫下列哪份表格？', ['FS 319', 'FS 217', 'FS 361', 'FS 106'], 1, '向消防處福利基金申請非緊急貸款須填寫 FS 217 表格向單位主管提出。'],
+        ['中華人民共和國最高國家權力機關是哪一個？', ['國務院', '全國人民代表大會', '最高人民法院', '國家監察委員會'], 1, '憲法第五十七條訂明全國人民代表大會是最高國家權力機關。'],
+        ['哪些機構行使國家立法權？', ['只有國務院', '全國人大及其常務委員會', '最高人民法院及最高人民檢察院', '國家監察委員會'], 1, '憲法第五十八條：全國人大和全國人大常委會行使國家立法權。'],
+        ['最高國家權力機關的執行機關是甚麼？', ['中華人民共和國國務院', '國家監察委員會', '中央軍事委員會', '中國人民政治協商會議'], 0, '國務院是最高國家權力機關的執行機關，也是最高國家行政機關。'],
+        ['國家的最高監察機關是哪一個？', ['最高人民檢察院', '國家監察委員會', '全國人大常委會', '國務院'], 1, '憲法第一百二十五條訂明國家監察委員會是最高監察機關。'],
+        ['中華人民共和國主席、副主席均缺位時，應由哪個機構補選？', ['國務院', '全國人民代表大會', '全國政協', '中央軍事委員會'], 1, '由全國人民代表大會補選。'],
+        ['民族自治地方包括哪三類？', ['自治區、自治州、自治縣', '省、市、區', '直轄市、特區、自治區', '鄉、鎮、村'], 0, '憲法第三十條列為自治區、自治州和自治縣。'],
+        ['《基本法》所指「五十年不變」主要是甚麼不變？', ['香港地理面積', '原有的資本主義制度和生活方式', '所有官員任期', '所有法例逐字不變'], 1, '《基本法》第五條指原有資本主義制度和生活方式五十年不變。'],
+        ['《基本法》在哪一天獲正式通過？', ['1984 年 12 月 19 日', '1990 年 4 月 4 日', '1997 年 7 月 1 日', '2020 年 6 月 30 日'], 1, '全國人民代表大會於 1990 年 4 月 4 日通過《基本法》。'],
+        ['1984 年 12 月 19 日，中英兩國政府簽署了甚麼？', ['《香港國安法》', '《中英聯合聲明》', '《基本法》', '《國歌條例》'], 1, '當日簽署的是《中英聯合聲明》。'],
+        ['香港特別行政區的土地和自然資源屬於誰所有？', ['香港永久性居民共同所有', '國家所有', '行政長官私人所有', '立法會所有'], 1, '按《基本法》第七條，土地及自然資源屬國家所有，由特區政府管理、使用、開發、出租或批給使用。'],
+        ['香港國安法訂明的四類危害國家安全罪行不包括哪一項？', ['分裂國家', '顛覆國家政權', '恐怖活動', '一般交通違例'], 3, '四類為分裂國家、顛覆國家政權、恐怖活動及勾結外國或境外勢力危害國家安全。'],
+        ['香港特別行政區維護國家安全委員會由誰擔任主席？', ['政務司司長', '行政長官', '律政司司長', '保安局局長'], 1, '國安委由行政長官擔任主席。'],
+        ['中央人民政府駐香港特別行政區維護國家安全機構的名稱是甚麼？', ['國家監察委員會香港辦事處', '駐香港特別行政區維護國家安全公署', '香港警務處國家安全處', '外交部駐港公署'], 1, '正式名稱為中央人民政府駐香港特別行政區維護國家安全公署。'],
+        ['負責處理危害國家安全犯罪案件的指定法官，任期為多久？', ['半年', '一年', '兩年', '終身'], 1, '參考資料列明指定法官任期為一年。'],
+        ['「全民國家安全教育日」是每年哪一天？', ['4 月 15 日', '5 月 4 日', '7 月 1 日', '10 月 1 日'], 0, '每年 4 月 15 日為全民國家安全教育日。'],
+        ['中華人民共和國國歌的歌名是甚麼？', ['《歌唱祖國》', '《義勇軍進行曲》', '《東方紅》', '《黃河大合唱》'], 1, '國歌為《義勇軍進行曲》。'],
+        ['奏唱國歌時，下列哪項最符合應有禮儀？', ['肅立、舉止莊重，不得有不尊重國歌的行為', '可以隨意走動交談', '必須背向國旗', '只需演奏者肅立'], 0, '參與者應肅立、舉止莊重並尊重國歌。'],
+        ['屬員如欲根據《公務員事務規例》第 904 條獲准離開工作崗位接受診療（少於半天），正確程序是：', ['事後三星期補交手續', '事先向假期推薦/核准人員提交申請及證明文件', '只需口頭通知同班隊員', '毋須任何手續'], 1, '應事先向其假期推薦人員／核准人員提交申請及相關證明文件。']
+      ]
+    }
+  };
+
+  // State Management
+  let currentPaperTab = 0; // 0: 甲, 1: 乙, 2: 丙, 3: 全卷 60 題
+  let activeQuestions = []; // Currently drawn questions
+  let isGraded = false;
+  let instantFeedback = false;
+  let currentFilterOnlyWrong = false;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initTabs();
+    generateAndRenderPaper(0);
+    bindEvents();
+  });
+
+  // Fisher-Yates Shuffle Algorithm
+  function shuffleArray(array) {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
   }
-}
-</script>
 
+  function initTabs() {
+    const tabNav = document.getElementById('tabNav');
+    tabNav.innerHTML = '';
+
+    const tabsDef = [
+      { name: '甲卷：裝備與救護學', index: 0 },
+      { name: '乙卷：行動與常行訓令', index: 1 },
+      { name: '丙卷：法例、國情與國安', index: 2 },
+      { name: '🔥 全卷 60 題隨機大考', index: 3 }
+    ];
+
+    tabsDef.forEach(tab => {
+      const btn = document.createElement('button');
+      btn.className = `px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition border ${
+        currentPaperTab === tab.index
+          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+      }`;
+      btn.textContent = tab.name;
+      btn.onclick = () => switchPaperTab(tab.index);
+      tabNav.appendChild(btn);
+    });
+  }
+
+  function switchPaperTab(tabIndex) {
+    currentPaperTab = tabIndex;
+    initTabs();
+    generateAndRenderPaper(tabIndex);
+  }
+
+  function generateAndRenderPaper(tabIndex) {
+    isGraded = false;
+    currentFilterOnlyWrong = false;
+    document.getElementById('resultBox').classList.add('hidden');
+    document.getElementById('filterWrongBtn').classList.remove('hidden');
+    document.getElementById('showAllBtn').classList.add('hidden');
+
+    let drawn = [];
+
+    if (tabIndex === 0) {
+      document.getElementById('paperTitle').textContent = questionPool.paperA.name;
+      document.getElementById('paperDesc').textContent = questionPool.paperA.desc;
+      // Draw 20 random from Paper A
+      const pool = shuffleArray(questionPool.paperA.questions);
+      drawn = pool.slice(0, Math.min(20, pool.length));
+    } else if (tabIndex === 1) {
+      document.getElementById('paperTitle').textContent = questionPool.paperB.name;
+      document.getElementById('paperDesc').textContent = questionPool.paperB.desc;
+      // Draw 20 random from Paper B
+      const pool = shuffleArray(questionPool.paperB.questions);
+      drawn = pool.slice(0, Math.min(20, pool.length));
+    } else if (tabIndex === 2) {
+      document.getElementById('paperTitle').textContent = questionPool.paperC.name;
+      document.getElementById('paperDesc').textContent = questionPool.paperC.desc;
+      // Draw 20 random from Paper C
+      const pool = shuffleArray(questionPool.paperC.questions);
+      drawn = pool.slice(0, Math.min(20, pool.length));
+    } else if (tabIndex === 3) {
+      document.getElementById('paperTitle').textContent = '全卷 60 題綜合模擬考';
+      document.getElementById('paperDesc').textContent = '跨範疇綜合測試：甲卷 20 題 + 乙卷 20 題 + 丙卷 20 題（每次隨機生成）';
+      // Draw 20 from A, 20 from B, 20 from C
+      const poolA = shuffleArray(questionPool.paperA.questions).slice(0, 20);
+      const poolB = shuffleArray(questionPool.paperB.questions).slice(0, 20);
+      const poolC = shuffleArray(questionPool.paperC.questions).slice(0, 20);
+      drawn = [...poolA, ...poolB, ...poolC];
+    }
+
+    activeQuestions = drawn;
+    renderQuestionsUI();
+    updateProgress();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderQuestionsUI() {
+    const container = document.getElementById('questionsContainer');
+    container.innerHTML = '';
+
+    document.getElementById('totalCount').textContent = activeQuestions.length;
+
+    activeQuestions.forEach((qData, qIdx) => {
+      const [questionText, options, correctKey, explanation] = qData;
+      const qNum = qIdx + 1;
+      const inputName = `q_active_${qIdx}`;
+
+      const card = document.createElement('article');
+      card.className = 'q-card bg-white rounded-2xl p-5 border border-slate-200 shadow-sm transition-all duration-200';
+      card.id = `card_${qIdx}`;
+
+      let optionsHtml = options.map((optText, optIdx) => {
+        const optionLetter = ['A', 'B', 'C', 'D'][optIdx];
+        return `
+          <label class="opt-label flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-300 hover:bg-blue-50/50 transition bg-white select-none">
+            <input type="radio" name="${inputName}" value="${optIdx}" class="mt-1 w-4 h-4 text-blue-600 border-slate-300 focus:ring-blue-500">
+            <div class="text-sm leading-snug flex-1">
+              <span class="font-bold text-slate-700 mr-1">${optionLetter}.</span>
+              <span class="text-slate-800">${optText}</span>
+            </div>
+          </label>
+        `;
+      }).join('');
+
+      card.innerHTML = `
+        <div class="flex items-start gap-3 mb-3">
+          <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-blue-100 text-blue-800 font-extrabold text-xs flex-shrink-0 mt-0.5">
+            ${qNum}
+          </span>
+          <h3 class="font-bold text-base text-slate-900 leading-snug">${questionText}</h3>
+        </div>
+        <div class="space-y-2.5 pl-0 sm:pl-10">
+          ${optionsHtml}
+        </div>
+        <div class="explain-box hidden mt-4 ml-0 sm:ml-10 p-3.5 rounded-xl text-sm bg-blue-50 text-blue-900 border-l-4 border-blue-500">
+          <div class="font-bold mb-0.5">正解：${['A','B','C','D'][correctKey]}</div>
+          <div class="text-slate-700">${explanation}</div>
+        </div>
+      `;
+
+      // Bind Event Listener
+      card.querySelectorAll(`input[name="${inputName}"]`).forEach(input => {
+        input.onchange = () => {
+          updateProgress();
+          if (instantFeedback) {
+            checkSingleQuestion(card, qData, input.value);
+          }
+        };
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  function checkSingleQuestion(card, qData, userVal) {
+    const [, , correctKey] = qData;
+    const labels = card.querySelectorAll('.opt-label');
+    const explainBox = card.querySelector('.explain-box');
+
+    explainBox.classList.remove('hidden');
+
+    labels.forEach((label, idx) => {
+      label.classList.remove('border-emerald-500', 'bg-emerald-50', 'border-rose-500', 'bg-rose-50');
+      if (idx === correctKey) {
+        label.classList.add('border-emerald-500', 'bg-emerald-50');
+      }
+      if (userVal !== undefined && parseInt(userVal) === idx && idx !== correctKey) {
+        label.classList.add('border-rose-500', 'bg-rose-50');
+      }
+    });
+
+    card.classList.remove('border-emerald-300', 'border-rose-300', 'bg-emerald-50/20', 'bg-rose-50/20');
+    if (parseInt(userVal) === correctKey) {
+      card.classList.add('border-emerald-300', 'bg-emerald-50/20');
+    } else {
+      card.classList.add('border-rose-300', 'bg-rose-50/20');
+    }
+  }
+
+  function updateProgress() {
+    let answered = 0;
+    activeQuestions.forEach((_, qIdx) => {
+      const checked = document.querySelector(`input[name="q_active_${qIdx}"]:checked`);
+      if (checked) answered++;
+    });
+
+    document.getElementById('answeredCount').textContent = answered;
+    const total = activeQuestions.length;
+    const pct = total > 0 ? (answered / total) * 100 : 0;
+    document.getElementById('progressBar').style.width = `${pct}%`;
+  }
+
+  function bindEvents() {
+    // Random Draw Button
+    document.getElementById('drawNewPaperBtn').onclick = () => {
+      generateAndRenderPaper(currentPaperTab);
+    };
+
+    // Instant Feedback Toggle
+    const instantToggle = document.getElementById('instantFeedbackToggle');
+    instantToggle.onchange = (e) => {
+      instantFeedback = e.target.checked;
+      if (instantFeedback) {
+        activeQuestions.forEach((qData, qIdx) => {
+          const card = document.getElementById(`card_${qIdx}`);
+          const checked = document.querySelector(`input[name="q_active_${qIdx}"]:checked`);
+          if (checked) {
+            checkSingleQuestion(card, qData, checked.value);
+          }
+        });
+      }
+    };
+
+    // Submit Button
+    document.getElementById('submitBtn').onclick = gradePaper;
+
+    // Reset Modal Bindings
+    document.getElementById('resetBtn').onclick = () => {
+      document.getElementById('confirmModal').classList.remove('hidden');
+    };
+    document.getElementById('cancelReset').onclick = () => {
+      document.getElementById('confirmModal').classList.add('hidden');
+    };
+    document.getElementById('confirmReset').onclick = () => {
+      document.getElementById('confirmModal').classList.add('hidden');
+      resetCurrentAnswers();
+    };
+
+    // Wrong Question Filter Toggle
+    document.getElementById('filterWrongBtn').onclick = () => {
+      currentFilterOnlyWrong = true;
+      document.getElementById('filterWrongBtn').classList.add('hidden');
+      document.getElementById('showAllBtn').classList.remove('hidden');
+      applyWrongFilter();
+    };
+
+    document.getElementById('showAllBtn').onclick = () => {
+      currentFilterOnlyWrong = false;
+      document.getElementById('filterWrongBtn').classList.remove('hidden');
+      document.getElementById('showAllBtn').classList.add('hidden');
+      applyWrongFilter();
+    };
+  }
+
+  function gradePaper() {
+    let score = 0;
+    let wrongCount = 0;
+    let blankCount = 0;
+
+    activeQuestions.forEach((qData, qIdx) => {
+      const card = document.getElementById(`card_${qIdx}`);
+      const checked = document.querySelector(`input[name="q_active_${qIdx}"]:checked`);
+      const correctKey = qData[2];
+
+      checkSingleQuestion(card, qData, checked ? checked.value : undefined);
+
+      if (!checked) {
+        blankCount++;
+        card.dataset.status = 'wrong';
+      } else if (parseInt(checked.value) === correctKey) {
+        score++;
+        card.dataset.status = 'correct';
+      } else {
+        wrongCount++;
+        card.dataset.status = 'wrong';
+      }
+    });
+
+    isGraded = true;
+    const total = activeQuestions.length;
+    const pct = Math.round((score / total) * 100);
+
+    const resultBox = document.getElementById('resultBox');
+    resultBox.classList.remove('hidden');
+
+    document.getElementById('scoreText').textContent = `${score} / ${total}（${pct}%）`;
+    document.getElementById('correctStat').textContent = score;
+    document.getElementById('wrongStat').textContent = wrongCount;
+    document.getElementById('blankStat').textContent = blankCount;
+
+    const feedback = document.getElementById('resultFeedback');
+    if (pct >= 80) {
+      feedback.textContent = '🎉 表現優異！熟練掌握考點內容，請繼續保持。';
+      feedback.className = 'text-sm font-bold text-emerald-800 bg-emerald-50 p-3 rounded-xl border border-emerald-200';
+    } else if (pct >= 60) {
+      feedback.textContent = '👍 達到合格水平，建議針對錯題加強重溫。';
+      feedback.className = 'text-sm font-bold text-amber-800 bg-amber-50 p-3 rounded-xl border border-amber-200';
+    } else {
+      feedback.textContent = '⚠️ 表現未如理想，建議再次重溫相關常行訓令與裝備指引。';
+      feedback.className = 'text-sm font-bold text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200';
+    }
+
+    resultBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function applyWrongFilter() {
+    activeQuestions.forEach((_, qIdx) => {
+      const card = document.getElementById(`card_${qIdx}`);
+      if (currentFilterOnlyWrong) {
+        if (card.dataset.status === 'correct') {
+          card.classList.add('hidden');
+        } else {
+          card.classList.remove('hidden');
+        }
+      } else {
+        card.classList.remove('hidden');
+      }
+    });
+  }
+
+  function resetCurrentAnswers() {
+    isGraded = false;
+    currentFilterOnlyWrong = false;
+    document.getElementById('resultBox').classList.add('hidden');
+    document.getElementById('filterWrongBtn').classList.remove('hidden');
+    document.getElementById('showAllBtn').classList.add('hidden');
+
+    // Re-render UI with same active questions
+    renderQuestionsUI();
+    updateProgress();
+  }
+  </script>
 </body>
 </html>
+
